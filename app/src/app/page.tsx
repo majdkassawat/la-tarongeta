@@ -1,490 +1,463 @@
-"use client";
-
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import Link from "next/link";
+import TarongetaMascot from "@/components/TarongetaMascot";
 import { SCHEDULE_SLOTS } from "@/config/schedule";
-import SlotSelector from "@/components/SlotSelector";
-import BizumInfo from "@/components/BizumInfo";
-import SummaryCard from "@/components/SummaryCard";
-import SuccessScreen from "@/components/SuccessScreen";
-import { FormData, FormErrors, SubmitState } from "@/types";
+import { BIZUM_CONFIG } from "@/config/bizum";
 
-const INITIAL_FORM: FormData = {
-  parentName: "",
-  childName: "",
-  childAge: "",
-  phone: "",
-  whatsapp: "",
-  selectedSlotId: "",
-  notes: "",
-  gdprConsent: false,
-};
+const WHATSAPP_URL = `https://wa.me/${BIZUM_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  "¡Hola! Me gustaría saber más sobre La Tarongeta 🍊"
+)}`;
 
-function sanitize(value: string): string {
-  return value.replace(/[<>"']/g, "").trim();
-}
-
-function validatePhone(value: string): boolean {
-  return /^[6789]\d{8}$/.test(value.replace(/\s|-/g, ""));
-}
-
-function validate(data: FormData): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!data.parentName.trim()) errors.parentName = "Por favor, indica tu nombre completo.";
-  if (!data.childName.trim()) errors.childName = "Por favor, indica el nombre del niño/a.";
-  if (
-    !data.childAge ||
-    isNaN(Number(data.childAge)) ||
-    Number(data.childAge) < 1 ||
-    Number(data.childAge) > 17
-  ) {
-    errors.childAge = "Por favor, indica una edad válida (1–17 años).";
-  }
-  if (!data.phone.trim()) {
-    errors.phone = "Por favor, indica un teléfono de contacto.";
-  } else if (!validatePhone(data.phone)) {
-    errors.phone = "El número de teléfono no parece válido (ej: 612 345 678).";
-  }
-  if (!data.whatsapp.trim()) {
-    errors.whatsapp = "Por favor, indica tu número de WhatsApp.";
-  } else if (!validatePhone(data.whatsapp)) {
-    errors.whatsapp = "El número de WhatsApp no parece válido (ej: 612 345 678).";
-  }
-  if (!data.selectedSlotId) errors.selectedSlotId = "Por favor, selecciona un horario.";
-  if (!data.gdprConsent)
-    errors.gdprConsent = "Debes aceptar la política de privacidad para continuar.";
-
-  return errors;
-}
+// Fixed per-letter tilts so the title looks hand-cut, like the sign
+const TITLE_LETTERS: { ch: string; tilt: number; lift: number }[] = [
+  { ch: "L", tilt: -5, lift: 0 },
+  { ch: "A", tilt: 4, lift: 2 },
+  { ch: " ", tilt: 0, lift: 0 },
+  { ch: "T", tilt: -3, lift: -2 },
+  { ch: "A", tilt: 5, lift: 1 },
+  { ch: "R", tilt: -4, lift: 3 },
+  { ch: "O", tilt: 3, lift: -1 },
+  { ch: "N", tilt: -2, lift: 2 },
+  { ch: "G", tilt: 5, lift: -2 },
+  { ch: "E", tilt: -5, lift: 1 },
+  { ch: "T", tilt: 3, lift: -1 },
+  { ch: "A", tilt: -3, lift: 2 },
+];
 
 export default function HomePage() {
-  const [form, setForm] = useState<FormData>(INITIAL_FORM);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [submitState, setSubmitState] = useState<SubmitState>("idle");
-  const [showSummary, setShowSummary] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const selectedSlot = SCHEDULE_SLOTS.find((s) => s.id === form.selectedSlotId) ?? null;
-
-  const handleChange = useCallback(
-    (field: keyof FormData, value: string | boolean) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    },
-    []
-  );
-
-  const handleReview = () => {
-    const errs = validate(form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      const firstErrorEl = document.querySelector("[data-field-error]");
-      firstErrorEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-    setShowSummary(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleSubmit = async () => {
-    if (submitState === "loading") return; // anti-double-submit
-    setSubmitState("loading");
-
-    const payload = {
-      parentName: sanitize(form.parentName),
-      childName: sanitize(form.childName),
-      childAge: form.childAge,
-      phone: sanitize(form.phone),
-      whatsapp: sanitize(form.whatsapp),
-      selectedSlotId: form.selectedSlotId,
-      slotLabel: selectedSlot
-        ? `${selectedSlot.day} ${selectedSlot.startTime}–${selectedSlot.endTime}`
-        : "",
-      notes: sanitize(form.notes),
-      submittedAt: new Date().toISOString(),
-    };
-
-    // TODO: Replace with real API call
-    // await fetch("/api/reservations", { method: "POST", body: JSON.stringify(payload) });
-    console.log("[La Tarongeta] Reservation submitted:", payload);
-
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setSubmitState("success");
-    setSubmitted(true);
-  };
-
-  // ── Success screen ──────────────────────────────────────────────────────
-  if (submitted && submitState === "success") {
-    return (
-      <main className="min-h-screen bg-amber-50">
-        <div className="max-w-lg mx-auto px-4 py-10">
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/logo.jpg"
-              alt="La Tarongeta"
-              width={320}
-              height={96}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <SuccessScreen formData={form} selectedSlot={selectedSlot} />
-          </div>
-        </div>
+  return (
+    <div className="min-h-screen">
+      <SiteHeader />
+      <main>
+        <Hero />
+        <PosterNotes />
+        <Activities />
+        <Schedule />
+        <HowItWorks />
+        <Visit />
       </main>
-    );
-  }
-
-  // ── Main form ───────────────────────────────────────────────────────────
-  return (
-    <main className="min-h-screen bg-amber-50">
-      <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
-
-        {/* Header */}
-        <header className="text-center space-y-2">
-          <div className="flex justify-center">
-            <Image
-              src="/logo.jpg"
-              alt="La Tarongeta"
-              width={340}
-              height={100}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <p className="text-gray-500 text-sm flex items-center justify-center gap-1 mt-1">
-            <span>📍</span> Sant Andreu, Barcelona
-          </p>
-          <p className="text-gray-700 text-base font-medium">
-            Reserva una plaza para tu peque
-          </p>
-        </header>
-
-        {/* Info banner */}
-        <div className="rounded-2xl bg-white border border-orange-100 shadow-sm p-4 text-sm text-gray-600 leading-relaxed">
-          Rellena el formulario, elige tu horario y envía el Bizum para asegurar
-          la plaza. Te confirmaremos la reserva por WhatsApp en cuanto recibamos
-          el pago. 🧡
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 space-y-6">
-
-            {/* ── Parent ─────────────────────────────────────────────── */}
-            <section aria-labelledby="parent-section">
-              <h2
-                id="parent-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Datos del padre / madre
-              </h2>
-              <Field
-                label="Nombre completo"
-                id="parentName"
-                required
-                placeholder="María García López"
-                value={form.parentName}
-                onChange={(v) => handleChange("parentName", v)}
-                error={errors.parentName}
-              />
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Child ──────────────────────────────────────────────── */}
-            <section aria-labelledby="child-section">
-              <h2
-                id="child-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Datos del niño / niña
-              </h2>
-              <div className="space-y-4">
-                <Field
-                  label="Nombre completo"
-                  id="childName"
-                  required
-                  placeholder="Pablo García López"
-                  value={form.childName}
-                  onChange={(v) => handleChange("childName", v)}
-                  error={errors.childName}
-                />
-                <Field
-                  label="Edad"
-                  id="childAge"
-                  required
-                  type="number"
-                  placeholder="7"
-                  min="1"
-                  max="17"
-                  value={form.childAge}
-                  onChange={(v) => handleChange("childAge", v)}
-                  error={errors.childAge}
-                  hint="Entre 1 y 17 años"
-                />
-              </div>
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Contact ────────────────────────────────────────────── */}
-            <section aria-labelledby="contact-section">
-              <h2
-                id="contact-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Contacto
-              </h2>
-              <div className="space-y-4">
-                <Field
-                  label="Teléfono"
-                  id="phone"
-                  required
-                  type="tel"
-                  placeholder="612 345 678"
-                  value={form.phone}
-                  onChange={(v) => handleChange("phone", v)}
-                  error={errors.phone}
-                />
-                <Field
-                  label="WhatsApp"
-                  id="whatsapp"
-                  required
-                  type="tel"
-                  placeholder="612 345 678"
-                  value={form.whatsapp}
-                  onChange={(v) => handleChange("whatsapp", v)}
-                  error={errors.whatsapp}
-                  hint="Si es el mismo número, repítelo aquí"
-                />
-              </div>
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Schedule ───────────────────────────────────────────── */}
-            <section aria-labelledby="schedule-section">
-              <h2
-                id="schedule-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Horario semanal
-              </h2>
-              <SlotSelector
-                slots={SCHEDULE_SLOTS}
-                selectedSlotId={form.selectedSlotId}
-                onSelect={(id) => handleChange("selectedSlotId", id)}
-                error={errors.selectedSlotId}
-              />
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Bizum ──────────────────────────────────────────────── */}
-            <section aria-labelledby="bizum-section">
-              <h2
-                id="bizum-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Pago con Bizum
-              </h2>
-              <BizumInfo selectedSlot={selectedSlot} parentName={form.parentName} />
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Notes ──────────────────────────────────────────────── */}
-            <section>
-              <label
-                htmlFor="notes"
-                className="block text-sm font-semibold text-gray-700 mb-1"
-              >
-                Comentarios{" "}
-                <span className="text-gray-400 font-normal">(opcional)</span>
-              </label>
-              <textarea
-                id="notes"
-                rows={3}
-                placeholder="Alergias, necesidades especiales, preguntas…"
-                value={form.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
-              />
-            </section>
-
-            {/* ── GDPR ───────────────────────────────────────────────── */}
-            <section data-field-error={errors.gdprConsent ? true : undefined}>
-              <label className="flex gap-3 items-start cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.gdprConsent}
-                  onChange={(e) => handleChange("gdprConsent", e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0"
-                />
-                <span className="text-xs text-gray-500 leading-relaxed">
-                  He leído y acepto la{" "}
-                  <a
-                    href="#"
-                    className="text-orange-500 underline hover:text-orange-600"
-                  >
-                    política de privacidad
-                  </a>
-                  . Los datos facilitados se utilizarán únicamente para gestionar
-                  esta reserva.{" "}
-                  <span className="text-red-500">*</span>
-                </span>
-              </label>
-              {errors.gdprConsent && (
-                <p role="alert" className="mt-1.5 text-xs text-red-600">
-                  {errors.gdprConsent}
-                </p>
-              )}
-            </section>
-
-            {/* ── CTA ────────────────────────────────────────────────── */}
-            {!showSummary ? (
-              <button
-                type="button"
-                onClick={handleReview}
-                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
-              >
-                Revisar mi reserva →
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <SummaryCard formData={form} selectedSlot={selectedSlot} />
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowSummary(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-2xl text-sm transition-colors"
-                  >
-                    ← Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={submitState === "loading"}
-                    className="flex-[2] bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {submitState === "loading" ? (
-                      <>
-                        <svg
-                          className="animate-spin w-4 h-4 text-white"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          aria-hidden="true"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-                          />
-                        </svg>
-                        Enviando…
-                      </>
-                    ) : (
-                      "Confirmar solicitud ✓"
-                    )}
-                  </button>
-                </div>
-
-                {submitState === "error" && (
-                  <p role="alert" className="text-sm text-red-600 text-center">
-                    Ha ocurrido un error. Por favor, inténtalo de nuevo.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <footer className="text-center text-xs text-gray-400 pb-4 space-y-1">
-          <p>La Tarongeta · Sant Andreu, Barcelona</p>
-          <p>© {new Date().getFullYear()} Todos los derechos reservados</p>
-        </footer>
-      </div>
-    </main>
+      <SiteFooter />
+    </div>
   );
 }
 
-// ─── Reusable Field component ────────────────────────────────────────────────
+/* ── Header ──────────────────────────────────────────────────────────── */
 
-interface FieldProps {
-  id: string;
-  label: string;
-  required?: boolean;
-  type?: string;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  hint?: string;
-  min?: string;
-  max?: string;
+function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-40 bg-[#faf3e3]/95 backdrop-blur border-b border-orange-200/60">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <TarongetaMascot className="w-9 h-9" />
+          <Image
+            src="/logo.jpg"
+            alt="La Tarongeta"
+            width={150}
+            height={44}
+            className="object-contain mix-blend-multiply hidden sm:block"
+          />
+        </Link>
+        <nav aria-label="Secciones" className="hidden md:flex items-center gap-6 text-sm font-bold text-[#3b3229]">
+          <a href="#espacio" className="hover:text-orange-600 transition-colors">
+            El espacio
+          </a>
+          <a href="#actividades" className="hover:text-orange-600 transition-colors">
+            Actividades
+          </a>
+          <a href="#horarios" className="hover:text-orange-600 transition-colors">
+            Horarios
+          </a>
+          <a href="#donde" className="hover:text-orange-600 transition-colors">
+            Dónde
+          </a>
+        </nav>
+        <Link
+          href="/reserva"
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+        >
+          Reservar plaza
+        </Link>
+      </div>
+    </header>
+  );
 }
 
-function Field({
-  id,
-  label,
-  required,
-  type = "text",
-  placeholder,
-  value,
-  onChange,
-  error,
-  hint,
-  min,
-  max,
-}: FieldProps) {
+/* ── Hero: the cardboard sign, recreated ─────────────────────────────── */
+
+function Hero() {
   return (
-    <div data-field-error={error ? true : undefined}>
-      <label
-        htmlFor={id}
-        className="block text-sm font-semibold text-gray-700 mb-1"
-      >
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
-      <input
-        id={id}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        min={min}
-        max={max}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className={[
-          "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
-          error
-            ? "border-red-300 focus:ring-red-300 bg-red-50"
-            : "border-gray-200 focus:ring-orange-300",
-        ].join(" ")}
-      />
-      {error && (
-        <p
-          id={`${id}-error`}
-          role="alert"
-          className="mt-1 text-xs text-red-600"
-        >
-          {error}
-        </p>
-      )}
+    <section className="shutter relative overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 py-12 sm:py-20 flex justify-center">
+        <div className="cardboard relative w-full max-w-3xl px-5 py-10 sm:px-12 sm:py-14 -rotate-1">
+          {/* packing tape on the corners */}
+          <div aria-hidden className="tape absolute -top-4 -left-6 w-28 h-8 -rotate-45" />
+          <div aria-hidden className="tape absolute -top-4 -right-6 w-28 h-8 rotate-45" />
+
+          {/* COMING SOON strip */}
+          <div className="paper-note tilt-l inline-block px-3 sm:px-4 py-1.5">
+            <p className="font-hand text-base sm:text-xl tracking-[0.18em] sm:tracking-[0.25em] uppercase whitespace-nowrap">
+              Coming soon · Muy pronto
+            </p>
+          </div>
+
+          {/* handwritten opening note */}
+          <p className="font-hand text-lg sm:text-xl text-[#5b4632] mt-3 sm:mt-0 sm:absolute sm:right-10 sm:top-6 rotate-2 sm:text-right leading-tight">
+            ¡abrimos en<span className="hidden sm:inline"><br /></span>
+            <span className="sm:hidden"> </span>septiembre!
+          </p>
+
+          {/* title with the mascot doodled next to it */}
+          <div className="mt-6 sm:mt-8 flex items-center gap-3 sm:gap-5 flex-wrap">
+            <h1 className="font-display text-5xl sm:text-7xl leading-none select-none">
+              <span className="sr-only">La Tarongeta</span>
+              <span aria-hidden>
+                {TITLE_LETTERS.map((l, i) => (
+                  <span
+                    key={i}
+                    className="sticker-letter"
+                    style={{ transform: `rotate(${l.tilt}deg) translateY(${l.lift}px)` }}
+                  >
+                    {l.ch}
+                  </span>
+                ))}
+              </span>
+            </h1>
+            <TarongetaMascot className="mascot-bob w-16 sm:w-28 shrink-0" />
+          </div>
+
+          {/* subtitle note */}
+          <div className="paper-note tilt-r max-w-md mt-8 sm:mt-10 px-5 py-4">
+            <p className="font-hand text-xl sm:text-2xl leading-snug">
+              Un espacio creativo <strong>sin pantallas</strong> para explorar
+              el arte y el inglés en un ambiente relajado, natural y en
+              familia.
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/reserva"
+              className="bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base sm:text-lg px-6 py-3.5 rounded-2xl shadow-md transition-all"
+            >
+              Reservar plaza →
+            </Link>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="paper-note hover:brightness-95 font-bold text-base px-5 py-3.5 transition-all"
+            >
+              💬 Escríbenos por WhatsApp
+            </a>
+          </div>
+
+          <p className="mt-6 font-hand text-lg text-[#5b4632]">
+            📍 Sant Andreu, Barcelona
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── The four taped notes from the sign ──────────────────────────────── */
+
+function PosterNotes() {
+  return (
+    <section id="espacio" className="scroll-mt-20 max-w-6xl mx-auto px-4 py-16 sm:py-24">
+      <h2 className="font-display text-3xl sm:text-4xl text-center mb-12">
+        <span className="doodle-underline">¿Qué es La Tarongeta?</span>
+      </h2>
+
+      <div className="grid md:grid-cols-[1fr_auto] gap-10 items-center">
+        <div className="grid sm:grid-cols-2 gap-5">
+          <PosterNote>
+            A mobile-free creative space where kids can explore art and
+            language in a relaxed, natural, English-speaking environment.
+          </PosterNote>
+          <PosterNote yellow tiltClass="tilt-r">
+            Un espacio creativo sin pantallas donde los peques exploran el
+            arte y el inglés en un ambiente relajado, natural y cercano.
+          </PosterNote>
+          <PosterNote tiltClass="tilt-r2">
+            Grupos reducidos acompañados con cariño: pintura, manualidades,
+            cuentos y mucho juego con materiales naturales.
+          </PosterNote>
+          <PosterNote yellow tiltClass="tilt-l2">
+            Tardes de lunes, miércoles y viernes en Sant Andreu. Reserva
+            fácil con Bizum y confirmación por WhatsApp.
+          </PosterNote>
+        </div>
+
+        {/* the original sign, polaroid-style */}
+        <figure className="justify-self-center rotate-2 bg-white p-3 pb-4 shadow-xl rounded-sm max-w-[240px]">
+          <Image
+            src="/poster.jpg"
+            alt="El cartel original de La Tarongeta, hecho a mano con cartón, colgado en la persiana del local"
+            width={720}
+            height={994}
+            className="rounded-sm"
+          />
+          <figcaption className="font-hand text-center text-base mt-2 leading-tight">
+            Todo empezó con un cartel de cartón 🧡
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+function PosterNote({
+  children,
+  yellow = false,
+  tiltClass = "tilt-l",
+}: {
+  children: React.ReactNode;
+  yellow?: boolean;
+  tiltClass?: string;
+}) {
+  return (
+    <div
+      className={`paper-note ${yellow ? "paper-note--yellow" : ""} ${tiltClass} relative px-5 py-5`}
+    >
+      <div aria-hidden className="tape absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 rotate-2" />
+      <p className="font-hand text-lg sm:text-xl leading-snug">{children}</p>
     </div>
+  );
+}
+
+/* ── Activities ──────────────────────────────────────────────────────── */
+
+const ACTIVITIES = [
+  {
+    emoji: "🎨",
+    title: "Arte y manualidades",
+    text: "Pintura, collage, barro y tijeras: manos ocupadas y cabezas imaginando.",
+  },
+  {
+    emoji: "🗣️",
+    title: "Inglés de forma natural",
+    text: "El inglés se vive jugando, cantando y creando, sin fichas ni exámenes.",
+  },
+  {
+    emoji: "🌿",
+    title: "Juego sin pantallas",
+    text: "Materiales naturales, juego libre y tiempo sin prisas ni móviles.",
+  },
+  {
+    emoji: "🧡",
+    title: "Grupos pequeños",
+    text: "Plazas limitadas por grupo para acompañar a cada peque con calma.",
+  },
+];
+
+function Activities() {
+  return (
+    <section id="actividades" className="scroll-mt-20 bg-orange-100/50 py-16 sm:py-24">
+      <div className="max-w-6xl mx-auto px-4">
+        <h2 className="font-display text-3xl sm:text-4xl text-center mb-12">
+          <span className="doodle-underline">¿Qué haremos?</span>
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {ACTIVITIES.map((a, i) => (
+            <div
+              key={a.title}
+              className={`paper-note ${i % 2 === 0 ? "tilt-l2" : "tilt-r2"} px-5 py-6 text-center`}
+            >
+              <span aria-hidden className="text-4xl">{a.emoji}</span>
+              <h3 className="font-display text-xl mt-3 mb-2 text-orange-600">
+                {a.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-[#5b4632]">{a.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Schedule (from the shared config) ───────────────────────────────── */
+
+function spotsLabel(remaining: number): { text: string; className: string } {
+  if (remaining <= 0)
+    return { text: "Completo", className: "bg-gray-200 text-gray-500" };
+  if (remaining === 1)
+    return { text: "¡Última plaza!", className: "bg-red-100 text-red-600" };
+  return {
+    text: `${remaining} plazas libres`,
+    className: "bg-green-100 text-green-700",
+  };
+}
+
+function Schedule() {
+  return (
+    <section id="horarios" className="scroll-mt-20 max-w-6xl mx-auto px-4 py-16 sm:py-24">
+      <h2 className="font-display text-3xl sm:text-4xl text-center mb-4">
+        <span className="doodle-underline">Horarios</span>
+      </h2>
+      <p className="text-center font-hand text-xl text-[#5b4632] mb-12">
+        A partir de septiembre · {BIZUM_CONFIG.BIZUM_AMOUNT}/mes
+      </p>
+
+      <div className="cardboard rotate-1 max-w-3xl mx-auto px-5 py-8 sm:px-10">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {SCHEDULE_SLOTS.map((slot, i) => {
+            const spots = spotsLabel(slot.remainingSpots);
+            return (
+              <div
+                key={slot.id}
+                className={`paper-note ${i % 2 === 0 ? "tilt-l2" : "tilt-r2"} px-5 py-4 flex items-center justify-between gap-3`}
+              >
+                <div>
+                  <p className="font-display text-lg text-orange-600">{slot.day}</p>
+                  <p className="font-hand text-xl">
+                    {slot.startTime} – {slot.endTime}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${spots.className}`}
+                >
+                  {spots.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/reserva"
+            className="inline-block bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-md transition-all"
+          >
+            Reservar mi plaza →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── How it works ────────────────────────────────────────────────────── */
+
+const STEPS = [
+  {
+    title: "Elige un horario",
+    text: "Mira los horarios semanales y elige el que mejor os venga.",
+  },
+  {
+    title: "Rellena la reserva",
+    text: `Completa el formulario y envía el Bizum (${BIZUM_CONFIG.BIZUM_AMOUNT}/mes) para guardar la plaza.`,
+  },
+  {
+    title: "Confirmación por WhatsApp",
+    text: "En cuanto recibamos el pago te confirmamos la plaza por WhatsApp. ¡Y a crear!",
+  },
+];
+
+function HowItWorks() {
+  return (
+    <section className="bg-orange-100/50 py-16 sm:py-24">
+      <div className="max-w-4xl mx-auto px-4">
+        <h2 className="font-display text-3xl sm:text-4xl text-center mb-12">
+          <span className="doodle-underline">¿Cómo reservo?</span>
+        </h2>
+        <ol className="grid sm:grid-cols-3 gap-8">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className="text-center">
+              <span
+                aria-hidden
+                className="font-display inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-500 text-white text-2xl shadow-md mb-4"
+              >
+                {i + 1}
+              </span>
+              <h3 className="font-bold text-lg mb-1.5">{step.title}</h3>
+              <p className="text-sm leading-relaxed text-[#5b4632]">{step.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ── Visit / location ────────────────────────────────────────────────── */
+
+function Visit() {
+  return (
+    <section id="donde" className="scroll-mt-20 max-w-4xl mx-auto px-4 py-16 sm:py-24">
+      <div className="grid sm:grid-cols-[auto_1fr] gap-8 items-center">
+        <TarongetaMascot className="w-32 sm:w-40 justify-self-center" />
+        <div>
+          <h2 className="font-display text-3xl sm:text-4xl mb-4">
+            <span className="doodle-underline">Ven a conocernos</span>
+          </h2>
+          <p className="leading-relaxed mb-3">
+            Estamos preparando nuestro pequeño local en el barrio de{" "}
+            <strong>Sant Andreu, Barcelona</strong>, con muchas ganas de abrir
+            las puertas en septiembre.
+          </p>
+          <p className="leading-relaxed mb-6">
+            ¿Quieres la dirección exacta, resolver dudas o simplemente
+            saludar? Escríbenos y te contestamos enseguida.
+          </p>
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3.5 rounded-2xl shadow-md transition-colors"
+          >
+            💬 Hablar por WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+function SiteFooter() {
+  return (
+    <footer id="contacto" className="bg-[#3b3229] text-orange-50/90">
+      <div className="max-w-6xl mx-auto px-4 py-12 grid sm:grid-cols-3 gap-8 items-start">
+        <div>
+          <p className="font-display text-2xl text-orange-400">La Tarongeta</p>
+          <p className="font-hand text-lg mt-1">
+            Espacio creativo en inglés
+            <br />
+            Sant Andreu, Barcelona
+          </p>
+        </div>
+        <nav aria-label="Enlaces" className="grid gap-2 text-sm">
+          <a href="#espacio" className="hover:text-orange-300 transition-colors">
+            El espacio
+          </a>
+          <a href="#actividades" className="hover:text-orange-300 transition-colors">
+            Actividades
+          </a>
+          <a href="#horarios" className="hover:text-orange-300 transition-colors">
+            Horarios
+          </a>
+          <Link href="/reserva" className="hover:text-orange-300 transition-colors">
+            Reservar plaza
+          </Link>
+        </nav>
+        <div className="text-sm">
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-orange-300 transition-colors"
+          >
+            💬 WhatsApp
+          </a>
+          <p className="mt-4 text-orange-50/60">
+            © {new Date().getFullYear()} La Tarongeta · Todos los derechos
+            reservados
+          </p>
+        </div>
+      </div>
+    </footer>
   );
 }

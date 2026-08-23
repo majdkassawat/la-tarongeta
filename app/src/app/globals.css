@@ -2,10 +2,28 @@
 
 @theme inline {
   --font-nunito: var(--font-nunito);
+  --font-hand: var(--font-hand);
+  --font-display: var(--font-display);
+}
+
+/* ── La Tarongeta poster palette ──────────────────────────────────────── */
+:root {
+  --cardboard: #c9a36a;
+  --cardboard-dark: #a9834e;
+  --paper: #fbf8ef;
+  --paper-yellow: #ffcf3d;
+  --ink: #3b3229;
+  --naranja: #f7941d;
+  --naranja-dark: #d97706;
+  --naranja-deep: #7c3f00;
+  --leaf: #6da644;
+  --crema: #faf3e3;
 }
 
 body {
   font-family: var(--font-nunito), system-ui, sans-serif;
+  background-color: var(--crema);
+  color: var(--ink);
 }
 
 /* Remove number input arrows */
@@ -16,4 +34,111 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* ── Poster building blocks ───────────────────────────────────────────── */
+
+/* Corrugated-cardboard sheet, like the original coming-soon sign */
+.cardboard {
+  background-color: var(--cardboard);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+    linear-gradient(
+      105deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0) 35%,
+      rgba(96, 64, 20, 0.12) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(120, 84, 40, 0.06) 0 2px,
+      transparent 2px 28px
+    );
+  border-radius: 10px;
+  box-shadow:
+    0 24px 48px -20px rgba(60, 40, 10, 0.5),
+    inset 0 0 70px rgba(122, 84, 36, 0.28);
+}
+
+/* The metal shutter the sign was taped to */
+.shutter {
+  background-color: #b8b4ac;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0) 40%),
+    repeating-linear-gradient(
+      180deg,
+      #c4c0b8 0 10px,
+      #aaa69e 10px 13px,
+      #b8b4ac 13px 26px
+    );
+}
+
+/* Strip of packing tape */
+.tape {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.62)
+  );
+  box-shadow: 0 2px 8px rgba(60, 40, 10, 0.3);
+  clip-path: polygon(2% 0, 98% 5%, 100% 100%, 0 94%);
+}
+
+/* Hand-cut paper notes taped onto the cardboard */
+.paper-note {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  box-shadow: 0 12px 26px -14px rgba(60, 40, 10, 0.55);
+}
+.paper-note--yellow {
+  background: var(--paper-yellow);
+}
+
+.tilt-l {
+  transform: rotate(-1.6deg);
+}
+.tilt-r {
+  transform: rotate(1.3deg);
+}
+.tilt-l2 {
+  transform: rotate(-0.8deg);
+}
+.tilt-r2 {
+  transform: rotate(2deg);
+}
+
+/* Hand-painted title letters, cut out one by one like the sign */
+.sticker-letter {
+  display: inline-block;
+  color: var(--naranja);
+  -webkit-text-stroke: 2px var(--naranja-deep);
+  paint-order: stroke fill;
+  text-shadow:
+    3px 4px 0 rgba(124, 63, 0, 0.28),
+    0 1px 0 rgba(124, 63, 0, 0.35);
+}
+
+/* Wobbly hand-drawn underline */
+.doodle-underline {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='10' viewBox='0 0 120 10'%3E%3Cpath d='M2 7 C 20 2, 40 9, 60 5 S 100 3, 118 6' fill='none' stroke='%23f7941d' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 100% 0.5em;
+  background-position: 0 105%;
+  padding-bottom: 0.35em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-bob {
+    animation: mascot-bob 4s ease-in-out infinite;
+  }
+  @keyframes mascot-bob {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-3deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(3deg);
+    }
+  }
 }

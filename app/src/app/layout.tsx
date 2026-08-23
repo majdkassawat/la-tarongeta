@@ -1,21 +1,40 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const nunito = Nunito({
+// Self-hosted (src/fonts) so builds don't depend on Google Fonts at compile time
+const nunito = localFont({
+  src: "../fonts/nunito-latin-var.woff2",
   variable: "--font-nunito",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+  weight: "400 900",
+  display: "swap",
+});
+
+const patrickHand = localFont({
+  src: "../fonts/patrick-hand-latin.woff2",
+  variable: "--font-hand",
+  weight: "400",
+  display: "swap",
+});
+
+const chewy = localFont({
+  src: "../fonts/chewy-latin.woff2",
+  variable: "--font-display",
+  weight: "400",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "La Tarongeta · Reserva tu plaza",
+  title: {
+    default: "La Tarongeta · Espacio creativo en inglés para niños",
+    template: "%s · La Tarongeta",
+  },
   description:
-    "Reserva una plaza para tu peque en La Tarongeta, espacio creativo para niños en Sant Andreu, Barcelona.",
+    "La Tarongeta es un espacio creativo sin pantallas en Sant Andreu, Barcelona: arte, juego e inglés en un ambiente relajado y natural. ¡Abrimos en septiembre!",
   openGraph: {
-    title: "La Tarongeta · Reserva tu plaza",
+    title: "La Tarongeta · Espacio creativo en inglés para niños",
     description:
-      "Espacio creativo para niños en Sant Andreu, Barcelona. Reserva fácil y rápida.",
+      "Espacio creativo sin pantallas en Sant Andreu, Barcelona: arte, juego e inglés en un ambiente relajado y natural.",
     locale: "es_ES",
     type: "website",
   },
@@ -28,7 +47,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${nunito.variable} font-nunito antialiased`}>
+      <body
+        className={`${nunito.variable} ${patrickHand.variable} ${chewy.variable} font-nunito antialiased`}
+      >
         {children}
       </body>
     </html>
