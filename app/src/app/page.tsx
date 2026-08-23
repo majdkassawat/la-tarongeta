@@ -9,20 +9,24 @@ const WHATSAPP_URL = `https://wa.me/${BIZUM_CONFIG.WHATSAPP_NUMBER}?text=${encod
   "¡Hola! Me gustaría saber más sobre La Tarongeta 🍊"
 )}`;
 
-// Fixed per-letter tilts so the title looks hand-cut, like the sign
-const TITLE_LETTERS: { ch: string; tilt: number; lift: number }[] = [
-  { ch: "L", tilt: -5, lift: 0 },
-  { ch: "A", tilt: 4, lift: 2 },
-  { ch: " ", tilt: 0, lift: 0 },
-  { ch: "T", tilt: -3, lift: -2 },
-  { ch: "A", tilt: 5, lift: 1 },
-  { ch: "R", tilt: -4, lift: 3 },
-  { ch: "O", tilt: 3, lift: -1 },
-  { ch: "N", tilt: -2, lift: 2 },
-  { ch: "G", tilt: 5, lift: -2 },
-  { ch: "E", tilt: -5, lift: 1 },
-  { ch: "T", tilt: 3, lift: -1 },
-  { ch: "A", tilt: -3, lift: 2 },
+// Fixed per-letter tilts so the title looks hand-cut, like the sign.
+// Letters are grouped per word so lines can only break at the word gap.
+const TITLE_WORDS: { ch: string; tilt: number; lift: number }[][] = [
+  [
+    { ch: "L", tilt: -5, lift: 0 },
+    { ch: "A", tilt: 4, lift: 2 },
+  ],
+  [
+    { ch: "T", tilt: -3, lift: -2 },
+    { ch: "A", tilt: 5, lift: 1 },
+    { ch: "R", tilt: -4, lift: 3 },
+    { ch: "O", tilt: 3, lift: -1 },
+    { ch: "N", tilt: -2, lift: 2 },
+    { ch: "G", tilt: 5, lift: -2 },
+    { ch: "E", tilt: -5, lift: 1 },
+    { ch: "T", tilt: 3, lift: -1 },
+    { ch: "A", tilt: -3, lift: 2 },
+  ],
 ];
 
 export default function HomePage() {
@@ -109,16 +113,20 @@ function Hero() {
 
           {/* title with the mascot doodled next to it */}
           <div className="mt-6 sm:mt-8 flex items-center gap-3 sm:gap-5 flex-wrap">
-            <h1 className="font-display text-5xl sm:text-7xl leading-none select-none">
+            <h1 className="font-display text-4xl min-[420px]:text-5xl sm:text-7xl leading-none select-none">
               <span className="sr-only">La Tarongeta</span>
-              <span aria-hidden>
-                {TITLE_LETTERS.map((l, i) => (
-                  <span
-                    key={i}
-                    className="sticker-letter"
-                    style={{ transform: `rotate(${l.tilt}deg) translateY(${l.lift}px)` }}
-                  >
-                    {l.ch}
+              <span aria-hidden className="flex flex-wrap items-baseline gap-x-3 sm:gap-x-5">
+                {TITLE_WORDS.map((word, w) => (
+                  <span key={w} className="inline-flex">
+                    {word.map((l, i) => (
+                      <span
+                        key={i}
+                        className="sticker-letter"
+                        style={{ transform: `rotate(${l.tilt}deg) translateY(${l.lift}px)` }}
+                      >
+                        {l.ch}
+                      </span>
+                    ))}
                   </span>
                 ))}
               </span>

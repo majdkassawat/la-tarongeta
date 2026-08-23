@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { SCHEDULE_SLOTS } from "@/config/schedule";
 import { asset } from "@/config/site";
 import SlotSelector from "@/components/SlotSelector";
@@ -96,7 +97,8 @@ export default function ReservaPage() {
   const handleReview = () => {
     const errs = validate(form);
     if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+      // flush so the [data-field-error] markers exist before we query the DOM
+      flushSync(() => setErrors(errs));
       const firstErrorEl = document.querySelector("[data-field-error]");
       firstErrorEl?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       return;
@@ -296,7 +298,10 @@ export default function ReservaPage() {
             <hr className="border-gray-100" />
 
             {/* ── Schedule ───────────────────────────────────────────── */}
-            <section aria-labelledby="schedule-section">
+            <section
+              aria-labelledby="schedule-section"
+              data-field-error={errors.selectedSlotId ? true : undefined}
+            >
               <h2
                 id="schedule-section"
                 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
