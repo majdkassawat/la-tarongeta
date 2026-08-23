@@ -75,6 +75,9 @@ function SiteHeader() {
           <a href="#donde" className="hover:text-orange-600 transition-colors">
             Dónde
           </a>
+          <Link href="/descargas" className="hover:text-orange-600 transition-colors">
+            Descargas
+          </Link>
         </nav>
         <Link
           href="/reserva"
@@ -470,6 +473,9 @@ function SiteFooter() {
           </a>
           <Link href="/reserva" className="hover:text-orange-300 transition-colors">
             Reservar plaza
+          </Link>
+          <Link href="/descargas" className="hover:text-orange-300 transition-colors">
+            Descargas (QR)
           </Link>
         </nav>
         <div className="text-sm">

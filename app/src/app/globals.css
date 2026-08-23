@@ -108,6 +108,18 @@ input[type="number"] {
   border-radius: 2px;
 }
 
+/* Checkerboard behind transparent-PNG previews */
+.checker {
+  background-color: #ffffff;
+  background-image: conic-gradient(
+    #e8e2d4 25%,
+    #ffffff 0 50%,
+    #e8e2d4 0 75%,
+    #ffffff 0
+  );
+  background-size: 24px 24px;
+}
+
 /* Scribbled cloud bubble ("extraescolars 3–10 anys") */
 .cloud-note {
   background: var(--paper);
