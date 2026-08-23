@@ -24,7 +24,10 @@ const chewy = localFont({
   display: "swap",
 });
 
+const SITE_URL = "https://yaqtin.net/la-tarongeta";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "La Tarongeta · Espacio creativo en inglés para niños",
     template: "%s · La Tarongeta",
@@ -35,6 +38,16 @@ export const metadata: Metadata = {
     title: "La Tarongeta · Espacio creativo en inglés para niños",
     description:
       "Espacio creativo sin pantallas en Sant Andreu, Barcelona: arte, juego e inglés en un ambiente relajado y natural.",
+    url: SITE_URL,
+    siteName: "La Tarongeta",
+    images: [
+      {
+        url: `${SITE_URL}/og.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "El cartel de La Tarongeta: coming soon, abrimos en septiembre",
+      },
+    ],
     locale: "es_ES",
     type: "website",
   },

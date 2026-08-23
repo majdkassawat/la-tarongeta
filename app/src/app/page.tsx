@@ -3,6 +3,7 @@ import Link from "next/link";
 import TarongetaMascot from "@/components/TarongetaMascot";
 import { SCHEDULE_SLOTS } from "@/config/schedule";
 import { BIZUM_CONFIG } from "@/config/bizum";
+import { asset } from "@/config/site";
 
 const WHATSAPP_URL = `https://wa.me/${BIZUM_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
   "¡Hola! Me gustaría saber más sobre La Tarongeta 🍊"
@@ -50,7 +51,7 @@ function SiteHeader() {
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <TarongetaMascot className="w-9 h-9" />
           <Image
-            src="/logo.jpg"
+            src={asset("/logo.jpg")}
             alt="La Tarongeta"
             width={150}
             height={44}
@@ -73,7 +74,7 @@ function SiteHeader() {
         </nav>
         <Link
           href="/reserva"
-          className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+          className="bg-orange-700 hover:bg-orange-800 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
         >
           Reservar plaza
         </Link>
@@ -101,7 +102,7 @@ function Hero() {
           </div>
 
           {/* handwritten opening note */}
-          <p className="font-hand text-lg sm:text-xl text-[#5b4632] mt-3 sm:mt-0 sm:absolute sm:right-10 sm:top-6 rotate-2 sm:text-right leading-tight">
+          <p className="font-hand text-lg sm:text-xl text-[#3b3229] mt-3 sm:mt-0 sm:absolute sm:right-10 sm:top-6 rotate-2 sm:text-right leading-tight">
             ¡abrimos en<span className="hidden sm:inline"><br /></span>
             <span className="sm:hidden"> </span>septiembre!
           </p>
@@ -138,7 +139,7 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/reserva"
-              className="bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base sm:text-lg px-6 py-3.5 rounded-2xl shadow-md transition-all"
+              className="bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold text-base sm:text-lg px-6 py-3.5 rounded-2xl shadow-md transition-all"
             >
               Reservar plaza →
             </Link>
@@ -152,7 +153,7 @@ function Hero() {
             </a>
           </div>
 
-          <p className="mt-6 font-hand text-lg text-[#5b4632]">
+          <p className="mt-6 font-hand text-lg text-[#3b3229]">
             📍 Sant Andreu, Barcelona
           </p>
         </div>
@@ -173,8 +174,8 @@ function PosterNotes() {
       <div className="grid md:grid-cols-[1fr_auto] gap-10 items-center">
         <div className="grid sm:grid-cols-2 gap-5">
           <PosterNote>
-            A mobile-free creative space where kids can explore art and
-            language in a relaxed, natural, English-speaking environment.
+            A screen-free creative space where kids can explore art and
+            English in a relaxed, natural, English-speaking environment.
           </PosterNote>
           <PosterNote yellow tiltClass="tilt-r">
             Un espacio creativo sin pantallas donde los peques exploran el
@@ -193,7 +194,7 @@ function PosterNotes() {
         {/* the original sign, polaroid-style */}
         <figure className="justify-self-center rotate-2 bg-white p-3 pb-4 shadow-xl rounded-sm max-w-[240px]">
           <Image
-            src="/poster.jpg"
+            src={asset("/poster.jpg")}
             alt="El cartel original de La Tarongeta, hecho a mano con cartón, colgado en la persiana del local"
             width={720}
             height={994}
@@ -266,7 +267,7 @@ function Activities() {
               className={`paper-note ${i % 2 === 0 ? "tilt-l2" : "tilt-r2"} px-5 py-6 text-center`}
             >
               <span aria-hidden className="text-4xl">{a.emoji}</span>
-              <h3 className="font-display text-xl mt-3 mb-2 text-orange-600">
+              <h3 className="font-display text-xl mt-3 mb-2 text-orange-700">
                 {a.title}
               </h3>
               <p className="text-sm leading-relaxed text-[#5b4632]">{a.text}</p>
@@ -282,12 +283,12 @@ function Activities() {
 
 function spotsLabel(remaining: number): { text: string; className: string } {
   if (remaining <= 0)
-    return { text: "Completo", className: "bg-gray-200 text-gray-500" };
+    return { text: "Completo", className: "bg-gray-200 text-gray-600" };
   if (remaining === 1)
-    return { text: "¡Última plaza!", className: "bg-red-100 text-red-600" };
+    return { text: "¡Última plaza!", className: "bg-red-100 text-red-700" };
   return {
     text: `${remaining} plazas libres`,
-    className: "bg-green-100 text-green-700",
+    className: "bg-green-100 text-green-800",
   };
 }
 
@@ -311,7 +312,7 @@ function Schedule() {
                 className={`paper-note ${i % 2 === 0 ? "tilt-l2" : "tilt-r2"} px-5 py-4 flex items-center justify-between gap-3`}
               >
                 <div>
-                  <p className="font-display text-lg text-orange-600">{slot.day}</p>
+                  <p className="font-display text-lg text-orange-700">{slot.day}</p>
                   <p className="font-hand text-xl">
                     {slot.startTime} – {slot.endTime}
                   </p>
@@ -328,7 +329,7 @@ function Schedule() {
         <div className="mt-8 text-center">
           <Link
             href="/reserva"
-            className="inline-block bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-md transition-all"
+            className="inline-block bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-md transition-all"
           >
             Reservar mi plaza →
           </Link>
@@ -367,7 +368,7 @@ function HowItWorks() {
             <li key={step.title} className="text-center">
               <span
                 aria-hidden
-                className="font-display inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-500 text-white text-2xl shadow-md mb-4"
+                className="font-display inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-700 text-white text-2xl shadow-md mb-4"
               >
                 {i + 1}
               </span>
@@ -405,7 +406,7 @@ function Visit() {
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3.5 rounded-2xl shadow-md transition-colors"
+            className="inline-block bg-green-700 hover:bg-green-800 text-white font-bold px-6 py-3.5 rounded-2xl shadow-md transition-colors"
           >
             💬 Hablar por WhatsApp
           </a>

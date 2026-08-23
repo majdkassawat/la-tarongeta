@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { SCHEDULE_SLOTS } from "@/config/schedule";
+import { asset } from "@/config/site";
 import SlotSelector from "@/components/SlotSelector";
 import BizumInfo from "@/components/BizumInfo";
 import SummaryCard from "@/components/SummaryCard";
@@ -23,6 +24,12 @@ const INITIAL_FORM: FormData = {
 
 function sanitize(value: string): string {
   return value.replace(/[<>"']/g, "").trim();
+}
+
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
 }
 
 function validatePhone(value: string): boolean {
@@ -54,7 +61,7 @@ function validate(data: FormData): FormErrors {
   }
   if (!data.selectedSlotId) errors.selectedSlotId = "Por favor, selecciona un horario.";
   if (!data.gdprConsent)
-    errors.gdprConsent = "Debes aceptar la política de privacidad para continuar.";
+    errors.gdprConsent = "Debes aceptar el uso de tus datos para continuar.";
 
   return errors;
 }
@@ -65,6 +72,16 @@ export default function ReservaPage() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [showSummary, setShowSummary] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  // Move keyboard focus when a view swap unmounts the trigger button
+  useEffect(() => {
+    if (showSummary) summaryRef.current?.focus();
+  }, [showSummary]);
+  useEffect(() => {
+    if (submitted) successRef.current?.focus();
+  }, [submitted]);
 
   const selectedSlot = SCHEDULE_SLOTS.find((s) => s.id === form.selectedSlotId) ?? null;
 
@@ -81,11 +98,11 @@ export default function ReservaPage() {
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       const firstErrorEl = document.querySelector("[data-field-error]");
-      firstErrorEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstErrorEl?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       return;
     }
     setShowSummary(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   const handleSubmit = async () => {
@@ -123,7 +140,7 @@ export default function ReservaPage() {
         <div className="max-w-lg mx-auto px-4 py-10">
           <div className="flex justify-center mb-6">
             <Image
-              src="/logo.jpg"
+              src={asset("/logo.jpg")}
               alt="La Tarongeta"
               width={320}
               height={96}
@@ -131,7 +148,11 @@ export default function ReservaPage() {
               priority
             />
           </div>
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div
+            ref={successRef}
+            tabIndex={-1}
+            className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden outline-none"
+          >
             <SuccessScreen formData={form} selectedSlot={selectedSlot} />
           </div>
         </div>
@@ -149,14 +170,14 @@ export default function ReservaPage() {
           <div className="text-left">
             <Link
               href="/"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-orange-700 hover:text-orange-800 transition-colors"
             >
               ← Volver a la portada
             </Link>
           </div>
           <div className="flex justify-center">
             <Image
-              src="/logo.jpg"
+              src={asset("/logo.jpg")}
               alt="La Tarongeta"
               width={340}
               height={100}
@@ -167,9 +188,9 @@ export default function ReservaPage() {
           <p className="text-gray-500 text-sm flex items-center justify-center gap-1 mt-1">
             <span>📍</span> Sant Andreu, Barcelona
           </p>
-          <p className="text-gray-700 text-base font-medium">
+          <h1 className="text-gray-700 text-base font-semibold">
             Reserva una plaza para tu peque
-          </p>
+          </h1>
         </header>
 
         {/* Info banner */}
@@ -186,7 +207,7 @@ export default function ReservaPage() {
             <section aria-labelledby="parent-section">
               <h2
                 id="parent-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
                 Datos del padre / madre
               </h2>
@@ -207,7 +228,7 @@ export default function ReservaPage() {
             <section aria-labelledby="child-section">
               <h2
                 id="child-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
                 Datos del niño / niña
               </h2>
@@ -243,7 +264,7 @@ export default function ReservaPage() {
             <section aria-labelledby="contact-section">
               <h2
                 id="contact-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
                 Contacto
               </h2>
@@ -278,7 +299,7 @@ export default function ReservaPage() {
             <section aria-labelledby="schedule-section">
               <h2
                 id="schedule-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
                 Horario semanal
               </h2>
@@ -296,7 +317,7 @@ export default function ReservaPage() {
             <section aria-labelledby="bizum-section">
               <h2
                 id="bizum-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
                 Pago con Bizum
               </h2>
@@ -312,7 +333,7 @@ export default function ReservaPage() {
                 className="block text-sm font-semibold text-gray-700 mb-1"
               >
                 Comentarios{" "}
-                <span className="text-gray-400 font-normal">(opcional)</span>
+                <span className="text-gray-500 font-normal">(opcional)</span>
               </label>
               <textarea
                 id="notes"
@@ -320,7 +341,7 @@ export default function ReservaPage() {
                 placeholder="Alergias, necesidades especiales, preguntas…"
                 value={form.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
               />
             </section>
 
@@ -333,16 +354,10 @@ export default function ReservaPage() {
                   onChange={(e) => handleChange("gdprConsent", e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0"
                 />
-                <span className="text-xs text-gray-500 leading-relaxed">
-                  He leído y acepto la{" "}
-                  <a
-                    href="#"
-                    className="text-orange-500 underline hover:text-orange-600"
-                  >
-                    política de privacidad
-                  </a>
-                  . Los datos facilitados se utilizarán únicamente para gestionar
-                  esta reserva.{" "}
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  Acepto que los datos facilitados se utilicen únicamente para
+                  gestionar esta reserva y la comunicación por WhatsApp
+                  relacionada con ella.{" "}
                   <span className="text-red-500">*</span>
                 </span>
               </label>
@@ -358,12 +373,12 @@ export default function ReservaPage() {
               <button
                 type="button"
                 onClick={handleReview}
-                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
+                className="w-full bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
               >
                 Revisar mi reserva →
               </button>
             ) : (
-              <div className="space-y-4">
+              <div ref={summaryRef} tabIndex={-1} className="space-y-4 outline-none">
                 <SummaryCard formData={form} selectedSlot={selectedSlot} />
 
                 <div className="flex gap-3">
@@ -378,7 +393,7 @@ export default function ReservaPage() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitState === "loading"}
-                    className="flex-[2] bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-[2] bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {submitState === "loading" ? (
                       <>
@@ -420,7 +435,7 @@ export default function ReservaPage() {
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-400 pb-4 space-y-1">
+        <footer className="text-center text-xs text-gray-500 pb-4 space-y-1">
           <p>La Tarongeta · Sant Andreu, Barcelona</p>
           <p>© {new Date().getFullYear()} Todos los derechos reservados</p>
         </footer>
@@ -467,7 +482,7 @@ function Field({
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-600 mb-1">{hint}</p>}
       <input
         id={id}
         type={type}
@@ -479,7 +494,7 @@ function Field({
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}
         className={[
-          "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
+          "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
           error
             ? "border-red-300 focus:ring-red-300 bg-red-50"
             : "border-gray-200 focus:ring-orange-300",

@@ -19,10 +19,25 @@ La aplicación vive en [`app/`](app) (Next.js + TypeScript + Tailwind CSS).
 ```bash
 cd app
 npm install
-npm run dev    # http://localhost:3000
-npm run build  # build de producción
+npm run dev    # http://localhost:3000/la-tarongeta
+npm run build  # export estático en app/out/
 npm run lint
 ```
+
+## Publicación
+
+El sitio se sirve como export estático bajo
+**[yaqtin.net/la-tarongeta](https://yaqtin.net/la-tarongeta)** (mismo patrón
+que `ai-readiness` en yaqtin-website). Con un checkout de `yaqtin-website`
+al lado de este repositorio:
+
+```bash
+cd app
+npm run export:site   # build + copia el export a ../yaqtin-website/la-tarongeta
+```
+
+Después, commit y push en `yaqtin-website` para desplegar (Vercel sirve ese
+repositorio tal cual, sin build).
 
 ## Configuración
 
