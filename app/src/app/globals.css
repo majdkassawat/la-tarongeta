@@ -11,7 +11,7 @@
   --cardboard: #c9a36a;
   --cardboard-dark: #a9834e;
   --paper: #fbf8ef;
-  --paper-yellow: #ffcf3d;
+  --paper-orange: #ff8a1f;
   --ink: #3b3229;
   --naranja: #f7941d;
   --naranja-dark: #d97706;
@@ -91,8 +91,31 @@ input[type="number"] {
   border-radius: 4px;
   box-shadow: 0 12px 26px -14px rgba(60, 40, 10, 0.55);
 }
-.paper-note--yellow {
-  background: var(--paper-yellow);
+.paper-note--orange {
+  background: var(--paper-orange);
+  color: #7c2d12;
+}
+
+/* Black gaffer tape framing the sign, like the real one */
+.tape-black {
+  background: linear-gradient(
+    180deg,
+    rgba(26, 24, 22, 0.95),
+    rgba(52, 48, 44, 0.88) 55%,
+    rgba(30, 28, 26, 0.94)
+  );
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+}
+
+/* Scribbled cloud bubble ("extraescolars 3–10 anys") */
+.cloud-note {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 55% 45% 52% 48% / 46% 58% 42% 54%;
+  box-shadow:
+    0 10px 22px -12px rgba(60, 40, 10, 0.5),
+    0 0 0 4px rgba(59, 50, 41, 0.16);
 }
 
 .tilt-l {

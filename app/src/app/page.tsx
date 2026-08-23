@@ -94,14 +94,16 @@ function Hero() {
     <section className="shutter relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 py-12 sm:py-20 flex justify-center">
         <div className="cardboard relative w-full max-w-3xl px-5 py-10 sm:px-12 sm:py-14 -rotate-1">
-          {/* packing tape on the corners */}
-          <div aria-hidden className="tape absolute -top-4 -left-6 w-28 h-8 -rotate-45" />
-          <div aria-hidden className="tape absolute -top-4 -right-6 w-28 h-8 rotate-45" />
+          {/* black gaffer tape framing the sign, like the real one */}
+          <div aria-hidden className="tape-black absolute -top-3 -left-4 -right-4 h-7 rotate-[0.4deg]" />
+          <div aria-hidden className="tape-black absolute -bottom-3 -left-4 -right-4 h-7 -rotate-[0.5deg]" />
+          <div aria-hidden className="tape-black absolute -left-3.5 top-3 bottom-3 w-6 rotate-[0.6deg]" />
+          <div aria-hidden className="tape-black absolute -right-3.5 top-3 bottom-3 w-6 -rotate-[0.4deg]" />
 
           {/* COMING SOON strip */}
           <div className="paper-note tilt-l inline-block px-3 sm:px-4 py-1.5">
             <p className="font-hand text-base sm:text-xl tracking-[0.18em] sm:tracking-[0.25em] uppercase whitespace-nowrap">
-              Coming soon · Muy pronto
+              Coming soon…!
             </p>
           </div>
 
@@ -134,12 +136,20 @@ function Hero() {
             <TarongetaMascot className="mascot-bob w-16 sm:w-28 shrink-0" />
           </div>
 
+          {/* extraescolars cloud, like the scribbled bubble on the sign */}
+          <p
+            lang="ca"
+            className="cloud-note font-hand inline-block mt-5 px-5 py-2.5 text-lg sm:text-xl uppercase tracking-[0.08em] -rotate-1"
+          >
+            Extraescolars · 3–10 anys
+          </p>
+
           {/* subtitle note */}
-          <div className="paper-note tilt-r max-w-md mt-8 sm:mt-10 px-5 py-4">
+          <div className="paper-note tilt-r max-w-md mt-6 sm:mt-8 px-5 py-4">
             <p className="font-hand text-xl sm:text-2xl leading-snug">
-              Un espacio creativo <strong>sin pantallas</strong> para explorar
-              el arte y el inglés en un ambiente relajado, natural y en
-              familia.
+              Extraescolares creativas <strong>en inglés</strong> para niños y
+              niñas curiosos de 3 a 10 años: arte y lenguaje en un ambiente
+              relajado, natural y cercano.
             </p>
           </div>
 
@@ -181,21 +191,23 @@ function PosterNotes() {
 
       <div className="grid md:grid-cols-[1fr_auto] gap-10 items-center">
         <div className="grid sm:grid-cols-2 gap-5">
-          <PosterNote>
-            A screen-free creative space where kids can explore art and
-            English in a relaxed, natural, English-speaking environment.
+          <PosterNote lang="en">
+            A process-based creative workshop space for curious kids to
+            explore art and language in a relaxed, natural, English-speaking
+            environment.
           </PosterNote>
-          <PosterNote yellow tiltClass="tilt-r">
-            Un espacio creativo sin pantallas donde los peques exploran el
-            arte y el inglés en un ambiente relajado, natural y cercano.
+          <PosterNote orange lang="ca" tiltClass="tilt-r">
+            Un espai creatiu basat en processos artístics perquè les
+            criatures curioses puguin explorar l&apos;art i el llenguatge en
+            un entorn relaxat, natural i de parla anglesa.
           </PosterNote>
-          <PosterNote tiltClass="tilt-r2">
-            Grupos reducidos acompañados con cariño: pintura, manualidades,
-            cuentos y mucho juego con materiales naturales.
+          <PosterNote lang="en" tiltClass="tilt-r2">
+            ✳ Opening in Sept ✳ Founded by native English-speaker,
+            experienced teacher, and practicing artist.
           </PosterNote>
-          <PosterNote yellow tiltClass="tilt-l2">
-            Tardes de lunes, miércoles y viernes en Sant Andreu. Reserva
-            fácil con Bizum y confirmación por WhatsApp.
+          <PosterNote orange lang="ca" tiltClass="tilt-l2">
+            Fundada el 2026 per una parlant nadiua d&apos;anglès, mestra
+            d&apos;infantil i artista.
           </PosterNote>
         </div>
 
@@ -219,19 +231,23 @@ function PosterNotes() {
 
 function PosterNote({
   children,
-  yellow = false,
+  orange = false,
+  lang,
   tiltClass = "tilt-l",
 }: {
   children: React.ReactNode;
-  yellow?: boolean;
+  orange?: boolean;
+  lang?: string;
   tiltClass?: string;
 }) {
   return (
     <div
-      className={`paper-note ${yellow ? "paper-note--yellow" : ""} ${tiltClass} relative px-5 py-5`}
+      className={`paper-note ${orange ? "paper-note--orange" : ""} ${tiltClass} relative px-5 py-5`}
     >
       <div aria-hidden className="tape absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 rotate-2" />
-      <p className="font-hand text-lg sm:text-xl leading-snug">{children}</p>
+      <p lang={lang} className="font-hand text-lg sm:text-xl leading-snug">
+        {children}
+      </p>
     </div>
   );
 }
@@ -250,9 +266,9 @@ const ACTIVITIES = [
     text: "El inglés se vive jugando, cantando y creando, sin fichas ni exámenes.",
   },
   {
-    emoji: "🌿",
-    title: "Juego sin pantallas",
-    text: "Materiales naturales, juego libre y tiempo sin prisas ni móviles.",
+    emoji: "🖐️",
+    title: "Proceso, no producto",
+    text: "Importa explorar, probar y mancharse las manos; el resultado es lo de menos.",
   },
   {
     emoji: "🧡",
@@ -406,6 +422,10 @@ function Visit() {
             <strong>Sant Andreu, Barcelona</strong>, con muchas ganas de abrir
             las puertas en septiembre.
           </p>
+          <p className="leading-relaxed mb-3">
+            Al frente está su fundadora: hablante nativa de inglés, maestra
+            de infantil con experiencia y artista en activo.
+          </p>
           <p className="leading-relaxed mb-6">
             ¿Quieres la dirección exacta, resolver dudas o simplemente
             saludar? Escríbenos y te contestamos enseguida.
@@ -433,7 +453,7 @@ function SiteFooter() {
         <div>
           <p className="font-display text-2xl text-orange-400">La Tarongeta</p>
           <p className="font-hand text-lg mt-1">
-            Espacio creativo en inglés
+            Extraescolares creativas en inglés · 3–10 años
             <br />
             Sant Andreu, Barcelona
           </p>

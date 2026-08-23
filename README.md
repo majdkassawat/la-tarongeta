@@ -1,9 +1,11 @@
 # La Tarongeta
 
-Sitio web de **La Tarongeta**, un espacio creativo sin pantallas en Sant
-Andreu (Barcelona) donde los peques exploran el arte y el inglés en un
-ambiente relajado y natural. El diseño de la portada recrea el cartel de
-cartón hecho a mano que anuncia la apertura en el local.
+Sitio web de **La Tarongeta**, extraescolares creativas en inglés en Sant
+Andreu (Barcelona): un espacio de talleres basado en el proceso donde
+niños y niñas curiosos de 3 a 10 años exploran el arte y el lenguaje en un
+ambiente relajado, natural y de habla inglesa. El diseño de la portada
+recrea el cartel de cartón hecho a mano (inglés/catalán) que anuncia la
+apertura en el local.
 
 ## Estructura
 

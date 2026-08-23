@@ -29,15 +29,15 @@ const SITE_URL = "https://yaqtin.net/la-tarongeta";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "La Tarongeta · Espacio creativo en inglés para niños",
+    default: "La Tarongeta · Extraescolares creativas en inglés",
     template: "%s · La Tarongeta",
   },
   description:
-    "La Tarongeta es un espacio creativo sin pantallas en Sant Andreu, Barcelona: arte, juego e inglés en un ambiente relajado y natural. ¡Abrimos en septiembre!",
+    "La Tarongeta: extraescolares creativas en inglés en Sant Andreu, Barcelona. Talleres de arte basados en el proceso para niños y niñas curiosos de 3 a 10 años. ¡Abrimos en septiembre!",
   openGraph: {
-    title: "La Tarongeta · Espacio creativo en inglés para niños",
+    title: "La Tarongeta · Extraescolares creativas en inglés",
     description:
-      "Espacio creativo sin pantallas en Sant Andreu, Barcelona: arte, juego e inglés en un ambiente relajado y natural.",
+      "Extraescolares creativas en inglés en Sant Andreu, Barcelona: arte y lenguaje para peques de 3 a 10 años, en un ambiente relajado y natural.",
     url: SITE_URL,
     siteName: "La Tarongeta",
     images: [

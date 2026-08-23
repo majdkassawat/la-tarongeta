@@ -45,10 +45,10 @@ function validate(data: FormData): FormErrors {
   if (
     !data.childAge ||
     isNaN(Number(data.childAge)) ||
-    Number(data.childAge) < 1 ||
-    Number(data.childAge) > 17
+    Number(data.childAge) < 3 ||
+    Number(data.childAge) > 10
   ) {
-    errors.childAge = "Por favor, indica una edad válida (1–17 años).";
+    errors.childAge = "Por favor, indica una edad válida (3–10 años).";
   }
   if (!data.phone.trim()) {
     errors.phone = "Por favor, indica un teléfono de contacto.";
@@ -250,12 +250,12 @@ export default function ReservaPage() {
                   required
                   type="number"
                   placeholder="7"
-                  min="1"
-                  max="17"
+                  min="3"
+                  max="10"
                   value={form.childAge}
                   onChange={(v) => handleChange("childAge", v)}
                   error={errors.childAge}
-                  hint="Entre 1 y 17 años"
+                  hint="Entre 3 y 10 años"
                 />
               </div>
             </section>
