@@ -13,6 +13,9 @@ export const BIZUM_CONFIG = {
   /** Fee shown on the form */
   BIZUM_AMOUNT: "60€",
 
+  /** Fee spelled out for the payment steps */
+  BIZUM_AMOUNT_TEXT: "60 euros",
+
   /** WhatsApp number for the confirmation link (international, no + or spaces) */
   WHATSAPP_NUMBER: "34672034539",
 };

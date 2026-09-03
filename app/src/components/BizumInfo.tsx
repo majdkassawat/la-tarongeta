@@ -23,13 +23,17 @@ export default function BizumInfo({ t, selectedSlot, childName }: BizumInfoProps
 
       <ol className="space-y-2 text-sm text-orange-900">
         <li className="flex gap-2">
-          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center">
+          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-700 text-white text-xs font-bold flex items-center justify-center">
             1
           </span>
-          <span>{t.bizumStep1}</span>
+          <span>
+            {t.bizumStep1Before} {BIZUM_CONFIG.BIZUM_AMOUNT_TEXT} {t.bizumStep1Mid}{" "}
+            {BIZUM_CONFIG.BIZUM_ALIAS} (
+            <span className="whitespace-nowrap">{BIZUM_CONFIG.BIZUM_PHONE}</span>)
+          </span>
         </li>
         <li className="flex gap-2">
-          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center">
+          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-700 text-white text-xs font-bold flex items-center justify-center">
             2
           </span>
           <span>{t.bizumStep2}</span>
@@ -51,7 +55,7 @@ export default function BizumInfo({ t, selectedSlot, childName }: BizumInfoProps
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             {t.amount}
           </p>
-          <p className="text-3xl font-black text-orange-500">
+          <p className="text-3xl font-black text-orange-700">
             {BIZUM_CONFIG.BIZUM_AMOUNT}
           </p>
         </div>
@@ -61,7 +65,7 @@ export default function BizumInfo({ t, selectedSlot, childName }: BizumInfoProps
         href={waLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 text-sm transition-colors"
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-4 text-sm transition-colors"
       >
         <WhatsAppIcon />
         {t.waOpen}

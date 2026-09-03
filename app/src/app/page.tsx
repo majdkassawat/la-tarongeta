@@ -27,17 +27,22 @@ function sanitize(value: string): string {
   return value.replace(/[<>"']/g, "").trim();
 }
 
-/** Spanish mobile/landline, optionally prefixed with +34 / 0034 */
+/** Spanish numbers (optionally with 34 / +34 / 0034) or any international +number */
 function validatePhone(value: string): boolean {
-  const digits = value.replace(/[\s\-().]/g, "").replace(/^(\+34|0034)/, "");
-  return /^[6789]\d{8}$/.test(digits);
+  const v = value.replace(/[\s\-().]/g, "").replace(/^00/, "+");
+  if (v.startsWith("+")) return /^\+\d{8,15}$/.test(v);
+  return /^(34)?[6789]\d{8}$/.test(v);
 }
 
 function validate(data: FormData, t: Dict): FormErrors {
   const errors: FormErrors = {};
   if (!data.childName.trim()) errors.childName = t.errChildName;
   if (!data.childAge) errors.childAge = t.errAge;
-  if (!data.selectedSlotId) errors.selectedSlotId = t.errSlot;
+  if (!data.selectedSlotId) {
+    errors.selectedSlotId = t.errSlot;
+  } else if ((SCHEDULE_SLOTS.find((s) => s.id === data.selectedSlotId)?.remainingSpots ?? 0) <= 0) {
+    errors.selectedSlotId = t.errSlotFull;
+  }
   if (!data.whatsapp1.trim()) {
     errors.whatsapp1 = t.errWhatsapp1;
   } else if (!validatePhone(data.whatsapp1)) {
@@ -52,6 +57,12 @@ function validate(data: FormData, t: Dict): FormErrors {
 
 function scrollBehavior(): ScrollBehavior {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
+function scrollToFirstError() {
+  document
+    .querySelector("[data-field-error]")
+    ?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
 }
 
 export default function HomePage() {
@@ -97,21 +108,23 @@ export default function HomePage() {
   const handleChange = useCallback((field: keyof FormData, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setShowSummary(false);
   }, []);
 
   // The schedule follows the age group, so choosing an age pre-selects its session
   const handleAgeChange = (value: string) => {
     const slots = value ? slotsForAge(Number(value)) : [];
-    setForm((prev) => ({ ...prev, childAge: value, selectedSlotId: slots[0]?.id ?? "" }));
+    const open = slots.find((s) => s.remainingSpots > 0);
+    setForm((prev) => ({ ...prev, childAge: value, selectedSlotId: open?.id ?? "" }));
     setErrors((prev) => ({ ...prev, childAge: undefined, selectedSlotId: undefined }));
+    setShowSummary(false);
   };
 
   const handleReview = () => {
     const errs = validate(form, t);
     if (Object.keys(errs).length > 0) {
       flushSync(() => setErrors(errs));
-      const firstErrorEl = document.querySelector("[data-field-error]");
-      firstErrorEl?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+      scrollToFirstError();
       return;
     }
     setShowSummary(true);
@@ -120,6 +133,15 @@ export default function HomePage() {
 
   const handleSubmit = async () => {
     if (submitState === "loading") return; // anti-double-submit
+    const errs = validate(form, t);
+    if (Object.keys(errs).length > 0) {
+      flushSync(() => {
+        setErrors(errs);
+        setShowSummary(false);
+      });
+      scrollToFirstError();
+      return;
+    }
     setSubmitState("loading");
 
     const payload = {
@@ -174,7 +196,7 @@ export default function HomePage() {
             className={[
               "px-4 py-1.5 rounded-full text-sm font-semibold transition-colors",
               lang === code
-                ? "bg-orange-500 text-white"
+                ? "bg-orange-700 text-white"
                 : "text-gray-600 hover:bg-orange-50",
             ].join(" ")}
           >
@@ -285,7 +307,10 @@ export default function HomePage() {
                 disabled={availableSlots.length === 0}
                 options={availableSlots.map((s) => ({
                   value: s.id,
-                  label: `${slotLabel(s)} · ${s.ages[0]}–${s.ages[1]} ${t.ages}`,
+                  label: `${slotLabel(s)} · ${s.ages[0]}–${s.ages[1]} ${t.ages}${
+                    s.remainingSpots <= 0 ? ` · ${t.full}` : ""
+                  }`,
+                  disabled: s.remainingSpots <= 0,
                 }))}
               />
               <div className="mt-2 text-xs text-gray-600 space-y-0.5">
@@ -359,7 +384,7 @@ export default function HomePage() {
                 placeholder={t.notesPlaceholder}
                 value={form.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-600 resize-none"
               />
             </section>
 
@@ -370,7 +395,7 @@ export default function HomePage() {
                   type="checkbox"
                   checked={form.gdprConsent}
                   onChange={(e) => handleChange("gdprConsent", e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0"
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 accent-orange-700"
                 />
                 <span className="text-xs text-gray-600 leading-relaxed">
                   {t.gdpr} <span className="text-red-500">*</span>
@@ -388,7 +413,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleReview}
-                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
+                className="w-full bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
               >
                 {t.review}
               </button>
@@ -408,7 +433,7 @@ export default function HomePage() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitState === "loading"}
-                    className="flex-[2] bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-[2] bg-orange-700 hover:bg-orange-800 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {submitState === "loading" ? (
                       <>
@@ -455,7 +480,7 @@ interface FieldProps {
 }
 
 const inputBase =
-  "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-colors";
+  "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors";
 
 function Field({ id, label, required, type = "text", placeholder, value, onChange, error, hint }: FieldProps) {
   return (
@@ -475,7 +500,7 @@ function Field({ id, label, required, type = "text", placeholder, value, onChang
         aria-describedby={error ? `${id}-error` : undefined}
         className={[
           inputBase,
-          error ? "border-red-300 focus:ring-red-300 bg-red-50" : "border-gray-200 focus:ring-orange-300",
+          error ? "border-red-300 focus:ring-red-600 bg-red-50" : "border-gray-200 focus:ring-orange-600",
         ].join(" ")}
       />
       {error && (
@@ -496,7 +521,7 @@ interface SelectFieldProps {
   error?: string;
   placeholder: string;
   disabled?: boolean;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
 }
 
 function SelectField({ id, label, required, value, onChange, error, placeholder, disabled, options }: SelectFieldProps) {
@@ -516,12 +541,12 @@ function SelectField({ id, label, required, value, onChange, error, placeholder,
         className={[
           inputBase,
           "bg-white disabled:bg-gray-50 disabled:text-gray-500",
-          error ? "border-red-300 focus:ring-red-300 bg-red-50" : "border-gray-200 focus:ring-orange-300",
+          error ? "border-red-300 focus:ring-red-600 bg-red-50" : "border-gray-200 focus:ring-orange-600",
         ].join(" ")}
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
+          <option key={o.value} value={o.value} disabled={o.disabled}>
             {o.label}
           </option>
         ))}

@@ -31,7 +31,8 @@ export default function SuccessScreen({ t, formData, selectedSlot }: SuccessScre
           {t.successBody1}{" "}
           <strong className="text-gray-700">{formData.childName}</strong>{" "}
           {t.successBody2}{" "}
-          <strong className="text-orange-700">{slot}</strong>.
+          <strong className="text-orange-700">{slot}</strong>
+          {t.successBody3 ? ` ${t.successBody3}` : ""}.
         </p>
       </div>
 
@@ -70,7 +71,7 @@ export default function SuccessScreen({ t, formData, selectedSlot }: SuccessScre
         href={waLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold py-3.5 px-4 transition-colors text-sm"
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-green-700 hover:bg-green-800 text-white font-semibold py-3.5 px-4 transition-colors text-sm"
       >
         <WhatsAppIcon />
         {t.waNotify}
