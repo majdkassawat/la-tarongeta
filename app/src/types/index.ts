@@ -1,31 +1,31 @@
 export interface ScheduleSlot {
   id: string;
-  day: string;
-  dayShort: string;
+  /** Inclusive age range this session is for */
+  ages: [number, number];
   startTime: string;
   endTime: string;
+  /** Doors open before the session (only some slots) */
+  doorsOpen?: string;
   totalSpots: number;
   remainingSpots: number;
 }
 
 export interface FormData {
-  parentName: string;
   childName: string;
   childAge: string;
-  phone: string;
-  whatsapp: string;
   selectedSlotId: string;
+  whatsapp1: string;
+  whatsapp2: string;
   notes: string;
   gdprConsent: boolean;
 }
 
 export interface FormErrors {
-  parentName?: string;
   childName?: string;
   childAge?: string;
-  phone?: string;
-  whatsapp?: string;
   selectedSlotId?: string;
+  whatsapp1?: string;
+  whatsapp2?: string;
   gdprConsent?: string;
 }
 

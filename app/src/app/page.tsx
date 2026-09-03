@@ -1,21 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useCallback } from "react";
-import { SCHEDULE_SLOTS } from "@/config/schedule";
-import SlotSelector from "@/components/SlotSelector";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { AGES, SCHEDULE_SLOTS, slotLabel, slotsForAge } from "@/config/schedule";
+import { asset } from "@/config/site";
+import { DICTS, Dict, Lang } from "@/i18n";
 import BizumInfo from "@/components/BizumInfo";
 import SummaryCard from "@/components/SummaryCard";
 import SuccessScreen from "@/components/SuccessScreen";
 import { FormData, FormErrors, SubmitState } from "@/types";
 
+const LANG_KEY = "lt-lang";
+
 const INITIAL_FORM: FormData = {
-  parentName: "",
   childName: "",
   childAge: "",
-  phone: "",
-  whatsapp: "",
   selectedSlotId: "",
+  whatsapp1: "",
+  whatsapp2: "",
   notes: "",
   gdprConsent: false,
 };
@@ -24,67 +27,95 @@ function sanitize(value: string): string {
   return value.replace(/[<>"']/g, "").trim();
 }
 
+/** Spanish mobile/landline, optionally prefixed with +34 / 0034 */
 function validatePhone(value: string): boolean {
-  return /^[6789]\d{8}$/.test(value.replace(/\s|-/g, ""));
+  const digits = value.replace(/[\s\-().]/g, "").replace(/^(\+34|0034)/, "");
+  return /^[6789]\d{8}$/.test(digits);
 }
 
-function validate(data: FormData): FormErrors {
+function validate(data: FormData, t: Dict): FormErrors {
   const errors: FormErrors = {};
-
-  if (!data.parentName.trim()) errors.parentName = "Por favor, indica tu nombre completo.";
-  if (!data.childName.trim()) errors.childName = "Por favor, indica el nombre del niño/a.";
-  if (
-    !data.childAge ||
-    isNaN(Number(data.childAge)) ||
-    Number(data.childAge) < 1 ||
-    Number(data.childAge) > 17
-  ) {
-    errors.childAge = "Por favor, indica una edad válida (1–17 años).";
+  if (!data.childName.trim()) errors.childName = t.errChildName;
+  if (!data.childAge) errors.childAge = t.errAge;
+  if (!data.selectedSlotId) errors.selectedSlotId = t.errSlot;
+  if (!data.whatsapp1.trim()) {
+    errors.whatsapp1 = t.errWhatsapp1;
+  } else if (!validatePhone(data.whatsapp1)) {
+    errors.whatsapp1 = t.errWhatsappInvalid;
   }
-  if (!data.phone.trim()) {
-    errors.phone = "Por favor, indica un teléfono de contacto.";
-  } else if (!validatePhone(data.phone)) {
-    errors.phone = "El número de teléfono no parece válido (ej: 612 345 678).";
+  if (data.whatsapp2.trim() && !validatePhone(data.whatsapp2)) {
+    errors.whatsapp2 = t.errWhatsappInvalid;
   }
-  if (!data.whatsapp.trim()) {
-    errors.whatsapp = "Por favor, indica tu número de WhatsApp.";
-  } else if (!validatePhone(data.whatsapp)) {
-    errors.whatsapp = "El número de WhatsApp no parece válido (ej: 612 345 678).";
-  }
-  if (!data.selectedSlotId) errors.selectedSlotId = "Por favor, selecciona un horario.";
-  if (!data.gdprConsent)
-    errors.gdprConsent = "Debes aceptar la política de privacidad para continuar.";
-
+  if (!data.gdprConsent) errors.gdprConsent = t.errGdpr;
   return errors;
 }
 
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
 export default function HomePage() {
+  const [lang, setLang] = useState<Lang>("ca");
+  const t = DICTS[lang];
+
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [showSummary, setShowSummary] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  // Remember the visitor's language and keep <html lang> in sync.
+  // The saved preference is applied after hydration on purpose (the static
+  // HTML is Catalan), so this setState must live in an effect.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LANG_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved === "ca" || saved === "en") setLang(saved);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = t.htmlLang;
+    try {
+      window.localStorage.setItem(LANG_KEY, lang);
+    } catch {}
+  }, [lang, t.htmlLang]);
+
+  useEffect(() => {
+    if (showSummary) summaryRef.current?.focus();
+  }, [showSummary]);
+  useEffect(() => {
+    if (submitted) successRef.current?.focus();
+  }, [submitted]);
 
   const selectedSlot = SCHEDULE_SLOTS.find((s) => s.id === form.selectedSlotId) ?? null;
+  const ageNumber = form.childAge ? Number(form.childAge) : null;
+  const availableSlots = ageNumber ? slotsForAge(ageNumber) : [];
 
-  const handleChange = useCallback(
-    (field: keyof FormData, value: string | boolean) => {
-      setForm((prev) => ({ ...prev, [field]: value }));
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    },
-    []
-  );
+  const handleChange = useCallback((field: keyof FormData, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  }, []);
+
+  // The schedule follows the age group, so choosing an age pre-selects its session
+  const handleAgeChange = (value: string) => {
+    const slots = value ? slotsForAge(Number(value)) : [];
+    setForm((prev) => ({ ...prev, childAge: value, selectedSlotId: slots[0]?.id ?? "" }));
+    setErrors((prev) => ({ ...prev, childAge: undefined, selectedSlotId: undefined }));
+  };
 
   const handleReview = () => {
-    const errs = validate(form);
+    const errs = validate(form, t);
     if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+      flushSync(() => setErrors(errs));
       const firstErrorEl = document.querySelector("[data-field-error]");
-      firstErrorEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstErrorEl?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       return;
     }
     setShowSummary(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   const handleSubmit = async () => {
@@ -92,16 +123,14 @@ export default function HomePage() {
     setSubmitState("loading");
 
     const payload = {
-      parentName: sanitize(form.parentName),
       childName: sanitize(form.childName),
       childAge: form.childAge,
-      phone: sanitize(form.phone),
-      whatsapp: sanitize(form.whatsapp),
       selectedSlotId: form.selectedSlotId,
-      slotLabel: selectedSlot
-        ? `${selectedSlot.day} ${selectedSlot.startTime}–${selectedSlot.endTime}`
-        : "",
+      slotLabel: selectedSlot ? slotLabel(selectedSlot) : "",
+      whatsapp1: sanitize(form.whatsapp1),
+      whatsapp2: sanitize(form.whatsapp2),
       notes: sanitize(form.notes),
+      language: lang,
       submittedAt: new Date().toISOString(),
     };
 
@@ -115,24 +144,73 @@ export default function HomePage() {
     setSubmitted(true);
   };
 
+  const logo = (
+    <div className="flex justify-center">
+      <Image
+        src={asset("/logo.png")}
+        alt="La Tarongeta"
+        width={340}
+        height={54}
+        className="w-[300px] h-auto"
+        priority
+      />
+    </div>
+  );
+
+  const langToggle = (
+    <div className="flex flex-col items-center gap-2 pt-2">
+      <span className="text-xs text-gray-500">{t.language}</span>
+      <div
+        role="group"
+        aria-label={t.language}
+        className="inline-flex rounded-full border border-orange-200 bg-white p-1 shadow-sm"
+      >
+        {(["ca", "en"] as Lang[]).map((code) => (
+          <button
+            key={code}
+            type="button"
+            onClick={() => setLang(code)}
+            aria-pressed={lang === code}
+            className={[
+              "px-4 py-1.5 rounded-full text-sm font-semibold transition-colors",
+              lang === code
+                ? "bg-orange-500 text-white"
+                : "text-gray-600 hover:bg-orange-50",
+            ].join(" ")}
+          >
+            {code === "ca" ? "CAT" : "ENG"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const footer = (
+    <footer className="text-center text-xs text-gray-500 pb-4 space-y-4">
+      {langToggle}
+      <div className="space-y-1">
+        <p>La Tarongeta · {t.address}</p>
+        <p>
+          © {new Date().getFullYear()} {t.rights}
+        </p>
+      </div>
+    </footer>
+  );
+
   // ── Success screen ──────────────────────────────────────────────────────
   if (submitted && submitState === "success") {
     return (
       <main className="min-h-screen bg-amber-50">
-        <div className="max-w-lg mx-auto px-4 py-10">
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/logo.jpg"
-              alt="La Tarongeta"
-              width={320}
-              height={96}
-              className="object-contain"
-              priority
-            />
+        <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
+          {logo}
+          <div
+            ref={successRef}
+            tabIndex={-1}
+            className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden outline-none"
+          >
+            <SuccessScreen t={t} formData={form} selectedSlot={selectedSlot} />
           </div>
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <SuccessScreen formData={form} selectedSlot={selectedSlot} />
-          </div>
+          {footer}
         </div>
       </main>
     );
@@ -142,123 +220,46 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-amber-50">
       <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
-
         {/* Header */}
         <header className="text-center space-y-2">
-          <div className="flex justify-center">
-            <Image
-              src="/logo.jpg"
-              alt="La Tarongeta"
-              width={340}
-              height={100}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <p className="text-gray-500 text-sm flex items-center justify-center gap-1 mt-1">
-            <span>📍</span> Sant Andreu, Barcelona
-          </p>
-          <p className="text-gray-700 text-base font-medium">
-            Reserva una plaza para tu peque
-          </p>
+          {logo}
+          <p className="text-gray-600 text-sm mt-1">{t.address}</p>
         </header>
 
         {/* Info banner */}
-        <div className="rounded-2xl bg-white border border-orange-100 shadow-sm p-4 text-sm text-gray-600 leading-relaxed">
-          Rellena el formulario, elige tu horario y envía el Bizum para asegurar
-          la plaza. Te confirmaremos la reserva por WhatsApp en cuanto recibamos
-          el pago. 🧡
+        <div className="rounded-2xl bg-white border border-orange-100 shadow-sm p-4 text-sm text-gray-700 leading-relaxed">
+          {t.intro}
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 space-y-6">
-
-            {/* ── Parent ─────────────────────────────────────────────── */}
-            <section aria-labelledby="parent-section">
-              <h2
-                id="parent-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Datos del padre / madre
-              </h2>
-              <Field
-                label="Nombre completo"
-                id="parentName"
-                required
-                placeholder="María García López"
-                value={form.parentName}
-                onChange={(v) => handleChange("parentName", v)}
-                error={errors.parentName}
-              />
-            </section>
-
-            <hr className="border-gray-100" />
-
             {/* ── Child ──────────────────────────────────────────────── */}
             <section aria-labelledby="child-section">
               <h2
                 id="child-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
-                Datos del niño / niña
+                {t.childSection}
               </h2>
               <div className="space-y-4">
                 <Field
-                  label="Nombre completo"
+                  label={t.childName}
                   id="childName"
                   required
-                  placeholder="Pablo García López"
+                  placeholder={t.childNamePlaceholder}
                   value={form.childName}
                   onChange={(v) => handleChange("childName", v)}
                   error={errors.childName}
                 />
-                <Field
-                  label="Edad"
+                <SelectField
+                  label={t.age}
                   id="childAge"
                   required
-                  type="number"
-                  placeholder="7"
-                  min="1"
-                  max="17"
                   value={form.childAge}
-                  onChange={(v) => handleChange("childAge", v)}
+                  onChange={handleAgeChange}
                   error={errors.childAge}
-                  hint="Entre 1 y 17 años"
-                />
-              </div>
-            </section>
-
-            <hr className="border-gray-100" />
-
-            {/* ── Contact ────────────────────────────────────────────── */}
-            <section aria-labelledby="contact-section">
-              <h2
-                id="contact-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
-              >
-                Contacto
-              </h2>
-              <div className="space-y-4">
-                <Field
-                  label="Teléfono"
-                  id="phone"
-                  required
-                  type="tel"
-                  placeholder="612 345 678"
-                  value={form.phone}
-                  onChange={(v) => handleChange("phone", v)}
-                  error={errors.phone}
-                />
-                <Field
-                  label="WhatsApp"
-                  id="whatsapp"
-                  required
-                  type="tel"
-                  placeholder="612 345 678"
-                  value={form.whatsapp}
-                  onChange={(v) => handleChange("whatsapp", v)}
-                  error={errors.whatsapp}
-                  hint="Si es el mismo número, repítelo aquí"
+                  placeholder={t.agePlaceholder}
+                  options={AGES.map((a) => ({ value: String(a), label: `${a} ${t.years}` }))}
                 />
               </div>
             </section>
@@ -269,16 +270,67 @@ export default function HomePage() {
             <section aria-labelledby="schedule-section">
               <h2
                 id="schedule-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
-                Horario semanal
+                {t.scheduleSection}
               </h2>
-              <SlotSelector
-                slots={SCHEDULE_SLOTS}
-                selectedSlotId={form.selectedSlotId}
-                onSelect={(id) => handleChange("selectedSlotId", id)}
+              <SelectField
+                label={t.scheduleLabel}
+                id="selectedSlotId"
+                required
+                value={form.selectedSlotId}
+                onChange={(v) => handleChange("selectedSlotId", v)}
                 error={errors.selectedSlotId}
+                placeholder={t.schedulePlaceholder}
+                disabled={availableSlots.length === 0}
+                options={availableSlots.map((s) => ({
+                  value: s.id,
+                  label: `${slotLabel(s)} · ${s.ages[0]}–${s.ages[1]} ${t.ages}`,
+                }))}
               />
+              <div className="mt-2 text-xs text-gray-600 space-y-0.5">
+                <p>{t.weekdays}</p>
+                {selectedSlot?.doorsOpen && (
+                  <p>
+                    {t.doorsOpen} {selectedSlot.doorsOpen}.
+                  </p>
+                )}
+                <p>{t.maxPerSession}</p>
+              </div>
+            </section>
+
+            <hr className="border-gray-100" />
+
+            {/* ── Parents ────────────────────────────────────────────── */}
+            <section aria-labelledby="parents-section">
+              <h2
+                id="parents-section"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
+              >
+                {t.parentsSection}
+              </h2>
+              <div className="space-y-4">
+                <Field
+                  label={`${t.parent1} · ${t.whatsappNumber}`}
+                  id="whatsapp1"
+                  required
+                  type="tel"
+                  placeholder="612 345 678"
+                  value={form.whatsapp1}
+                  onChange={(v) => handleChange("whatsapp1", v)}
+                  error={errors.whatsapp1}
+                />
+                <Field
+                  label={`${t.parent2} · ${t.whatsappNumber}`}
+                  id="whatsapp2"
+                  type="tel"
+                  placeholder="612 345 678"
+                  value={form.whatsapp2}
+                  onChange={(v) => handleChange("whatsapp2", v)}
+                  error={errors.whatsapp2}
+                  hint={t.optional}
+                />
+              </div>
             </section>
 
             <hr className="border-gray-100" />
@@ -287,31 +339,27 @@ export default function HomePage() {
             <section aria-labelledby="bizum-section">
               <h2
                 id="bizum-section"
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"
+                className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4"
               >
-                Pago con Bizum
+                {t.bizumSection}
               </h2>
-              <BizumInfo selectedSlot={selectedSlot} parentName={form.parentName} />
+              <BizumInfo t={t} selectedSlot={selectedSlot} childName={form.childName} />
             </section>
 
             <hr className="border-gray-100" />
 
             {/* ── Notes ──────────────────────────────────────────────── */}
             <section>
-              <label
-                htmlFor="notes"
-                className="block text-sm font-semibold text-gray-700 mb-1"
-              >
-                Comentarios{" "}
-                <span className="text-gray-400 font-normal">(opcional)</span>
+              <label htmlFor="notes" className="block text-sm font-semibold text-gray-700 mb-1">
+                {t.notes} <span className="text-gray-500 font-normal">{t.optional}</span>
               </label>
               <textarea
                 id="notes"
                 rows={3}
-                placeholder="Alergias, necesidades especiales, preguntas…"
+                placeholder={t.notesPlaceholder}
                 value={form.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent resize-none"
               />
             </section>
 
@@ -324,17 +372,8 @@ export default function HomePage() {
                   onChange={(e) => handleChange("gdprConsent", e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0"
                 />
-                <span className="text-xs text-gray-500 leading-relaxed">
-                  He leído y acepto la{" "}
-                  <a
-                    href="#"
-                    className="text-orange-500 underline hover:text-orange-600"
-                  >
-                    política de privacidad
-                  </a>
-                  . Los datos facilitados se utilizarán únicamente para gestionar
-                  esta reserva.{" "}
-                  <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  {t.gdpr} <span className="text-red-500">*</span>
                 </span>
               </label>
               {errors.gdprConsent && (
@@ -351,11 +390,11 @@ export default function HomePage() {
                 onClick={handleReview}
                 className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold text-base py-4 rounded-2xl transition-all shadow-md"
               >
-                Revisar mi reserva →
+                {t.review}
               </button>
             ) : (
-              <div className="space-y-4">
-                <SummaryCard formData={form} selectedSlot={selectedSlot} />
+              <div ref={summaryRef} tabIndex={-1} className="space-y-4 outline-none">
+                <SummaryCard t={t} formData={form} selectedSlot={selectedSlot} />
 
                 <div className="flex gap-3">
                   <button
@@ -363,7 +402,7 @@ export default function HomePage() {
                     onClick={() => setShowSummary(false)}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-2xl text-sm transition-colors"
                   >
-                    ← Editar
+                    {t.edit}
                   </button>
                   <button
                     type="button"
@@ -373,37 +412,21 @@ export default function HomePage() {
                   >
                     {submitState === "loading" ? (
                       <>
-                        <svg
-                          className="animate-spin w-4 h-4 text-white"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          aria-hidden="true"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-                          />
+                        <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
                         </svg>
-                        Enviando…
+                        {t.sending}
                       </>
                     ) : (
-                      "Confirmar solicitud ✓"
+                      t.confirm
                     )}
                   </button>
                 </div>
 
                 {submitState === "error" && (
                   <p role="alert" className="text-sm text-red-600 text-center">
-                    Ha ocurrido un error. Por favor, inténtalo de nuevo.
+                    {t.submitError}
                   </p>
                 )}
               </div>
@@ -411,16 +434,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-400 pb-4 space-y-1">
-          <p>La Tarongeta · Sant Andreu, Barcelona</p>
-          <p>© {new Date().getFullYear()} Todos los derechos reservados</p>
-        </footer>
+        {footer}
       </div>
     </main>
   );
 }
 
-// ─── Reusable Field component ────────────────────────────────────────────────
+// ─── Reusable field components ───────────────────────────────────────────────
 
 interface FieldProps {
   id: string;
@@ -432,56 +452,82 @@ interface FieldProps {
   onChange: (value: string) => void;
   error?: string;
   hint?: string;
-  min?: string;
-  max?: string;
 }
 
-function Field({
-  id,
-  label,
-  required,
-  type = "text",
-  placeholder,
-  value,
-  onChange,
-  error,
-  hint,
-  min,
-  max,
-}: FieldProps) {
+const inputBase =
+  "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-colors";
+
+function Field({ id, label, required, type = "text", placeholder, value, onChange, error, hint }: FieldProps) {
   return (
     <div data-field-error={error ? true : undefined}>
-      <label
-        htmlFor={id}
-        className="block text-sm font-semibold text-gray-700 mb-1"
-      >
+      <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-1">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
-      {hint && <p className="text-xs text-gray-400 mb-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-600 mb-1">{hint}</p>}
       <input
         id={id}
         type={type}
         placeholder={placeholder}
         value={value}
-        min={min}
-        max={max}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}
         className={[
-          "w-full rounded-xl border px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-colors",
-          error
-            ? "border-red-300 focus:ring-red-300 bg-red-50"
-            : "border-gray-200 focus:ring-orange-300",
+          inputBase,
+          error ? "border-red-300 focus:ring-red-300 bg-red-50" : "border-gray-200 focus:ring-orange-300",
         ].join(" ")}
       />
       {error && (
-        <p
-          id={`${id}-error`}
-          role="alert"
-          className="mt-1 text-xs text-red-600"
-        >
+        <p id={`${id}-error`} role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+interface SelectFieldProps {
+  id: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  placeholder: string;
+  disabled?: boolean;
+  options: { value: string; label: string }[];
+}
+
+function SelectField({ id, label, required, value, onChange, error, placeholder, disabled, options }: SelectFieldProps) {
+  return (
+    <div data-field-error={error ? true : undefined}>
+      <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-1">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className={[
+          inputBase,
+          "bg-white disabled:bg-gray-50 disabled:text-gray-500",
+          error ? "border-red-300 focus:ring-red-300 bg-red-50" : "border-gray-200 focus:ring-orange-300",
+        ].join(" ")}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <p id={`${id}-error`} role="alert" className="mt-1 text-xs text-red-600">
           {error}
         </p>
       )}

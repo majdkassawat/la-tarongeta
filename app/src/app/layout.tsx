@@ -1,22 +1,29 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+// Self-hosted Lexend (src/fonts) so builds don't depend on Google Fonts
+const lexend = localFont({
+  src: "../fonts/lexend-latin-var.woff2",
+  variable: "--font-lexend",
+  weight: "100 900",
+  display: "swap",
 });
 
+const SITE_URL = "https://yaqtin.net/la-tarongeta";
+
 export const metadata: Metadata = {
-  title: "La Tarongeta · Reserva tu plaza",
+  metadataBase: new URL(SITE_URL),
+  title: "La Tarongeta · Reserva la teva plaça",
   description:
-    "Reserva una plaza para tu peque en La Tarongeta, espacio creativo para niños en Sant Andreu, Barcelona.",
+    "Reserva una plaça per a la teva criatura a La Tarongeta, extraescolars creatives en anglès a Sant Andreu, Barcelona. Carrer de Castellbell, 12.",
   openGraph: {
-    title: "La Tarongeta · Reserva tu plaza",
+    title: "La Tarongeta · Reserva la teva plaça",
     description:
-      "Espacio creativo para niños en Sant Andreu, Barcelona. Reserva fácil y rápida.",
-    locale: "es_ES",
+      "Extraescolars creatives en anglès a Sant Andreu, Barcelona. Reserva fàcil i ràpida.",
+    url: SITE_URL,
+    siteName: "La Tarongeta",
+    locale: "ca_ES",
     type: "website",
   },
 };
@@ -27,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${nunito.variable} font-nunito antialiased`}>
+    <html lang="ca">
+      <body className={`${lexend.variable} font-lexend antialiased`}>
         {children}
       </body>
     </html>

@@ -1,53 +1,46 @@
 /**
  * SCHEDULE CONFIGURATION
- * Edit this file to update the weekly schedule slots.
- *
- * Fields:
- * - id: unique identifier (keep URL-safe)
- * - day: full day name in Spanish
- * - dayShort: abbreviated day for mobile
- * - startTime / endTime: "HH:MM" format
- * - totalSpots: maximum places per slot
- * - remainingSpots: currently available (set to 0 to mark as full)
+ * One session per age group, Monday to Friday. Edit remainingSpots to mark a
+ * session as full (0).
  */
 
 import { ScheduleSlot } from "@/types";
 
+export const AGES = [3, 4, 5, 6, 7, 8] as const;
+
 export const SCHEDULE_SLOTS: ScheduleSlot[] = [
   {
-    id: "mon-17",
-    day: "Lunes",
-    dayShort: "Lun",
-    startTime: "17:00",
-    endTime: "18:00",
-    totalSpots: 8,
-    remainingSpots: 3,
+    id: "g34",
+    ages: [3, 4],
+    startTime: "17.00 h",
+    endTime: "17.50 h",
+    doorsOpen: "16.50 h",
+    totalSpots: 10,
+    remainingSpots: 10,
   },
   {
-    id: "mon-18",
-    day: "Lunes",
-    dayShort: "Lun",
-    startTime: "18:00",
-    endTime: "19:00",
-    totalSpots: 8,
-    remainingSpots: 0, // FULL — slot disabled
+    id: "g56",
+    ages: [5, 6],
+    startTime: "18.00 h",
+    endTime: "18.50 h",
+    totalSpots: 10,
+    remainingSpots: 10,
   },
   {
-    id: "wed-17",
-    day: "Miércoles",
-    dayShort: "Mié",
-    startTime: "17:00",
-    endTime: "18:00",
-    totalSpots: 8,
-    remainingSpots: 5,
-  },
-  {
-    id: "fri-17",
-    day: "Viernes",
-    dayShort: "Vie",
-    startTime: "17:00",
-    endTime: "18:00",
-    totalSpots: 8,
-    remainingSpots: 1,
+    id: "g78",
+    ages: [7, 8],
+    startTime: "19.00 h",
+    endTime: "19.50 h",
+    totalSpots: 10,
+    remainingSpots: 10,
   },
 ];
+
+/** Sessions available for a given age (the age groups partition 3–8). */
+export function slotsForAge(age: number): ScheduleSlot[] {
+  return SCHEDULE_SLOTS.filter((s) => age >= s.ages[0] && age <= s.ages[1]);
+}
+
+export function slotLabel(slot: ScheduleSlot): string {
+  return `${slot.startTime} – ${slot.endTime}`;
+}

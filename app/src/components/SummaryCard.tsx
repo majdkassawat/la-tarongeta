@@ -1,8 +1,11 @@
 "use client";
 
+import { slotLabel } from "@/config/schedule";
+import { Dict } from "@/i18n";
 import { FormData, ScheduleSlot } from "@/types";
 
 interface SummaryCardProps {
+  t: Dict;
   formData: FormData;
   selectedSlot: ScheduleSlot | null;
 }
@@ -17,27 +20,25 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function SummaryCard({ formData, selectedSlot }: SummaryCardProps) {
+export default function SummaryCard({ t, formData, selectedSlot }: SummaryCardProps) {
   return (
     <div className="rounded-2xl border-2 border-gray-200 bg-gray-50 p-5">
       <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
-        Resumen de tu reserva
+        {t.summaryTitle}
       </h3>
       <div className="space-y-0">
-        <Row label="Padre / madre" value={formData.parentName} />
-        <Row label="Nombre del niño/a" value={formData.childName} />
-        <Row label="Edad" value={formData.childAge ? `${formData.childAge} años` : ""} />
-        <Row label="Teléfono" value={formData.phone} />
-        <Row label="WhatsApp" value={formData.whatsapp} />
+        <Row label={t.summaryChild} value={formData.childName} />
         <Row
-          label="Horario"
-          value={
-            selectedSlot
-              ? `${selectedSlot.day} ${selectedSlot.startTime}–${selectedSlot.endTime}`
-              : "No seleccionado"
-          }
+          label={t.summaryAge}
+          value={formData.childAge ? `${formData.childAge} ${t.years}` : ""}
         />
-        {formData.notes && <Row label="Comentarios" value={formData.notes} />}
+        <Row
+          label={t.summarySchedule}
+          value={selectedSlot ? slotLabel(selectedSlot) : t.notSelected}
+        />
+        <Row label={t.summaryParent1} value={formData.whatsapp1} />
+        <Row label={t.summaryParent2} value={formData.whatsapp2} />
+        {formData.notes && <Row label={t.summaryNotes} value={formData.notes} />}
       </div>
     </div>
   );

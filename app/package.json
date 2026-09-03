@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "export:site": "next build && node scripts/publish-to-yaqtin.mjs",
     "lint": "eslint"
   },
   "dependencies": {
