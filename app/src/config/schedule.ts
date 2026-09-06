@@ -1,46 +1,33 @@
 /**
  * SCHEDULE CONFIGURATION
- * One session per age group, Monday to Friday. Edit remainingSpots to mark a
- * session as full (0).
+ * Two age groups, each with one time slot, Monday to Friday. Every
+ * (group, day) session takes at most CAPACITY children.
+ *
+ * SIGNUPS is edited by hand until the form has a backend: put the number of
+ * confirmed sign-ups per session there and a full session is shown as
+ * "Complet" and cannot be chosen.
  */
 
-import { ScheduleSlot } from "@/types";
+import { AgeGroup, Day } from "@/types";
 
-export const AGES = [3, 4, 5, 6, 7, 8] as const;
+export const CAPACITY = 10;
 
-export const SCHEDULE_SLOTS: ScheduleSlot[] = [
-  {
-    id: "g34",
-    ages: [3, 4],
-    startTime: "17.00 h",
-    endTime: "17.50 h",
-    doorsOpen: "16.50 h",
-    totalSpots: 10,
-    remainingSpots: 10,
-  },
-  {
-    id: "g56",
-    ages: [5, 6],
-    startTime: "18.00 h",
-    endTime: "18.50 h",
-    totalSpots: 10,
-    remainingSpots: 10,
-  },
-  {
-    id: "g78",
-    ages: [7, 8],
-    startTime: "19.00 h",
-    endTime: "19.50 h",
-    totalSpots: 10,
-    remainingSpots: 10,
-  },
+export const AGE_GROUPS: AgeGroup[] = [
+  { id: "g35", ages: [3, 5], startTime: "17.15 h", endTime: "18.15 h", doorsOpen: "17.00 h" },
+  { id: "g68", ages: [6, 8], startTime: "18.25 h", endTime: "19.25 h" },
 ];
 
-/** Sessions available for a given age (the age groups partition 3–8). */
-export function slotsForAge(age: number): ScheduleSlot[] {
-  return SCHEDULE_SLOTS.filter((s) => age >= s.ages[0] && age <= s.ages[1]);
+export const DAYS: Day[] = ["mon", "tue", "wed", "thu", "fri"];
+
+/** Confirmed sign-ups per session, keyed "<groupId>-<day>" (edit by hand). */
+export const SIGNUPS: Partial<Record<`${AgeGroup["id"]}-${Day}`, number>> = {
+  // "g35-mon": 10,   // example: Monday 3–5 session full
+};
+
+export function remainingSpots(groupId: AgeGroup["id"], day: Day): number {
+  return CAPACITY - (SIGNUPS[`${groupId}-${day}`] ?? 0);
 }
 
-export function slotLabel(slot: ScheduleSlot): string {
-  return `${slot.startTime} – ${slot.endTime}`;
+export function groupById(id: string): AgeGroup | null {
+  return AGE_GROUPS.find((g) => g.id === id) ?? null;
 }

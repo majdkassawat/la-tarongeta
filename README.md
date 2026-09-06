@@ -18,10 +18,13 @@ npm run lint
 
 ## Configuració
 
-- `app/src/config/schedule.ts` — sessions per franja d'edat (3–4, 5–6, 7–8),
-  horaris i places disponibles.
-- `app/src/config/bizum.ts` — telèfon del Bizum, import i número de WhatsApp.
-- `app/src/i18n.ts` — tots els textos en català i anglès.
+- `app/src/config/schedule.ts` — franges d'edat (3–5 i 6–8), horari de cada
+  franja, dies de la setmana, capacitat per sessió (`CAPACITY`) i el recompte
+  d'inscripcions ja fetes (`SIGNUPS`, editat a mà) que serveix per marcar un
+  dia com a *Complet*.
+- `app/src/config/contact.ts` — telèfon de contacte i número de WhatsApp.
+- `app/src/i18n.ts` — tots els textos en català i anglès (inclosos el
+  calendari de pagaments PayGold i el text de protecció de dades).
 
 ## Publicació
 
