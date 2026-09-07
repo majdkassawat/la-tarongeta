@@ -34,9 +34,14 @@ Vercel que viu a `yaqtin-website/api/la-tarongeta.js` (la capçalera del
 fitxer ho explica amb detall):
 
 1. **Vercel Blob** és el registre i l'única font de veritat per a les places:
-   cada inscripció és un fitxer JSON privat `la-tarongeta/signups/<grup>-<dia>/<n>.json`
+   cada inscripció és un fitxer JSON `la-tarongeta/signups/<grup>-<dia>/<n>-<etiqueta>.json`
    amb l'identificador `<grup>-<dia>-<n>`. El número `n` es reserva de manera
    atòmica, així dues famílies no poden quedar-se l'última plaça alhora.
+   Les inscripcions contenen noms i telèfons: cal un magatzem Blob **privat**
+   connectat al projecte de Vercel amb el prefix de variables `LA_TARONGETA`
+   (injecta `LA_TARONGETA_READ_WRITE_TOKEN`). Mentre no existeixi, la funció
+   fa servir el magatzem públic del lloc (`BLOB_READ_WRITE_TOKEN`) amb noms de
+   fitxer que porten una etiqueta derivada del token i no es poden endevinar.
 2. **Full de càlcul de Google** *La Tarongeta · Inscripcions*: quan el compte
    de servei està configurat a Vercel (`GOOGLE_SERVICE_ACCOUNT_EMAIL`,
    `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`; opcionalment `LA_TARONGETA_SHEET_ID`
