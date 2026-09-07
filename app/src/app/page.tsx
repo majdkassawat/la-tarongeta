@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { AGE_GROUPS, DAYS, groupById, remainingSpots } from "@/config/schedule";
-import { asset } from "@/config/site";
+import { AGE_GROUPS, Counts, DAYS, groupById, remainingSpots } from "@/config/schedule";
+import { SIGNUP_API, asset } from "@/config/site";
 import { DICTS, Lang } from "@/i18n";
 import PaymentInfo from "@/components/PaymentInfo";
 import SummaryCard from "@/components/SummaryCard";
@@ -41,20 +41,20 @@ function validatePhone(value: string): boolean {
   return /^(34)?[6789]\d{8}$/.test(v);
 }
 
-function allDaysFull(groupId: string): boolean {
+function allDaysFull(groupId: string, counts: Counts): boolean {
   const group = groupById(groupId);
-  return !!group && DAYS.every((d) => remainingSpots(group.id, d) <= 0);
+  return !!group && DAYS.every((d) => remainingSpots(group.id, d, counts) <= 0);
 }
 
 /** Returns dictionary keys, not text, so messages follow the language toggle. */
-function validate(data: FormData): FormErrors {
+function validate(data: FormData, counts: Counts): FormErrors {
   const errors: FormErrors = {};
   if (!data.childName.trim()) errors.childName = "errChildName";
   if (!data.ageGroup) errors.ageGroup = "errAgeGroup";
   if (data.ageGroup && !data.slot) errors.slot = "errSlot";
   if (data.slot && !data.day) {
-    errors.day = allDaysFull(data.ageGroup) ? "errGroupFull" : "errDay";
-  } else if (data.ageGroup && data.day && remainingSpots(data.ageGroup as "g35" | "g68", data.day as Day) <= 0) {
+    errors.day = allDaysFull(data.ageGroup, counts) ? "errGroupFull" : "errDay";
+  } else if (data.ageGroup && data.day && remainingSpots(data.ageGroup as "g35" | "g68", data.day as Day, counts) <= 0) {
     errors.day = "errDayFull";
   }
   if (!data.contact1Name.trim()) errors.contact1Name = "errContactName";
@@ -72,6 +72,36 @@ function validate(data: FormData): FormErrors {
   if (!data.paymentConsent) errors.paymentConsent = "errPaymentConsent";
   if (!data.dataConsent) errors.dataConsent = "errDataConsent";
   return errors;
+}
+
+/** What gets sent: trimmed, without angle brackets. Validation runs on this. */
+function cleanForm(form: FormData): FormData {
+  return {
+    ...form,
+    childName: sanitize(form.childName),
+    contact1Name: sanitize(form.contact1Name),
+    contact1Whatsapp: sanitize(form.contact1Whatsapp),
+    contact2Name: sanitize(form.contact2Name),
+    contact2Whatsapp: sanitize(form.contact2Whatsapp),
+    notes: sanitize(form.notes),
+  };
+}
+
+/** Maps a 400 {error, field} from the API back onto the form. */
+function apiFieldError(field: string, error: string): FormErrors {
+  const invalid = error === "invalid";
+  switch (field) {
+    case "childName": return { childName: "errChildName" };
+    case "ageGroup": return { ageGroup: "errAgeGroup" };
+    case "day": return { day: "errDay" };
+    case "contact1Name": return { contact1Name: "errContactName" };
+    case "contact2Name": return { contact2Name: "errContactName" };
+    case "contact1Whatsapp": return { contact1Whatsapp: invalid ? "errWhatsappInvalid" : "errWhatsapp" };
+    case "contact2Whatsapp": return { contact2Whatsapp: invalid ? "errWhatsappInvalid" : "errWhatsapp" };
+    case "paymentConsent": return { paymentConsent: "errPaymentConsent" };
+    case "dataConsent": return { dataConsent: "errDataConsent" };
+    default: return {};
+  }
 }
 
 function scrollBehavior(): ScrollBehavior {
@@ -93,6 +123,8 @@ export default function HomePage() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [showSummary, setShowSummary] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [counts, setCounts] = useState<Counts>({});
+  const [website, setWebsite] = useState(""); // honeypot, stays empty for people
   const summaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +134,6 @@ export default function HomePage() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LANG_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === "ca" || saved === "en") setLang(saved);
     } catch {}
   }, []);
@@ -113,6 +144,25 @@ export default function HomePage() {
       window.localStorage.setItem(LANG_KEY, lang);
     } catch {}
   }, [lang, t.htmlLang, t.title]);
+
+  // Spots already taken per session, so full days are disabled up front.
+  // If the API is unreachable every day stays selectable; the server still
+  // enforces the cap on submit.
+  const loadCounts = useCallback(async (): Promise<Counts | null> => {
+    try {
+      const r = await fetch(`${SIGNUP_API}?view=availability`, { cache: "no-store" });
+      if (!r.ok) return null;
+      const data = (await r.json()) as { counts?: Counts };
+      const fresh = data.counts ?? {};
+      setCounts(fresh);
+      return fresh;
+    } catch {
+      return null;
+    }
+  }, []);
+  useEffect(() => {
+    void loadCounts();
+  }, [loadCounts]);
 
   useEffect(() => {
     if (showSummary) summaryRef.current?.focus();
@@ -137,6 +187,7 @@ export default function HomePage() {
         : { ...prev, [field]: undefined },
     );
     setShowSummary(false);
+    setSubmitState((s) => (s === "error" ? "idle" : s));
   }, []);
 
   // Each age group has exactly one time slot, so it is pre-selected;
@@ -145,23 +196,26 @@ export default function HomePage() {
     setForm((prev) => ({ ...prev, ageGroup: value, slot: value ? value : "", day: "" }));
     setErrors((prev) => ({ ...prev, ageGroup: undefined, slot: undefined, day: undefined }));
     setShowSummary(false);
+    setSubmitState((s) => (s === "error" ? "idle" : s));
   };
 
   const handleReview = () => {
-    const errs = validate(form);
+    const errs = validate(cleanForm(form), counts);
     if (Object.keys(errs).length > 0) {
       flushSync(() => setErrors(errs));
       scrollToFirstError();
       return;
     }
     setErrors({});
+    setSubmitState((s) => (s === "error" ? "idle" : s));
     setShowSummary(true);
     window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   const handleSubmit = async () => {
     if (submitState === "loading") return; // anti-double-submit
-    const errs = validate(form);
+    const clean = cleanForm(form);
+    const errs = validate(clean, counts);
     if (Object.keys(errs).length > 0) {
       flushSync(() => {
         setErrors(errs);
@@ -174,31 +228,58 @@ export default function HomePage() {
     setSubmitState("loading");
 
     const payload = {
-      childName: sanitize(form.childName),
-      ageGroup: form.ageGroup,
-      slot: group ? `${group.startTime} – ${group.endTime}` : "",
-      day: form.day,
-      contact1Name: sanitize(form.contact1Name),
-      contact1Whatsapp: sanitize(form.contact1Whatsapp),
-      contact2Name: sanitize(form.contact2Name),
-      contact2Whatsapp: sanitize(form.contact2Whatsapp),
-      notes: sanitize(form.notes),
-      paymentConsent: form.paymentConsent,
-      dataConsent: form.dataConsent,
-      photoConsent: form.photoConsent,
-      newsConsent: form.newsConsent,
+      childName: clean.childName,
+      ageGroup: clean.ageGroup,
+      day: clean.day,
+      contact1Name: clean.contact1Name,
+      contact1Whatsapp: clean.contact1Whatsapp,
+      contact2Name: clean.contact2Name,
+      contact2Whatsapp: clean.contact2Whatsapp,
+      notes: clean.notes,
+      paymentConsent: clean.paymentConsent,
+      dataConsent: clean.dataConsent,
+      photoConsent: clean.photoConsent,
+      newsConsent: clean.newsConsent,
       language: lang,
-      submittedAt: new Date().toISOString(),
+      website,
     };
 
-    // TODO: Replace with real API call
-    // await fetch("/api/reservations", { method: "POST", body: JSON.stringify(payload) });
-    console.log("[La Tarongeta] Sign-up submitted:", payload);
+    const backToForm = (fieldErrors: FormErrors) => {
+      flushSync(() => {
+        setErrors(fieldErrors);
+        setShowSummary(false);
+        setSubmitState("idle");
+      });
+      scrollToFirstError();
+    };
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setSubmitState("success");
-    setSubmitted(true);
+    try {
+      const res = await fetch(SIGNUP_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 409) {
+        // Someone took the last spot of that session in the meantime.
+        const fresh = (await loadCounts()) ?? counts;
+        backToForm({ day: allDaysFull(clean.ageGroup, fresh) ? "errGroupFull" : "errDayFull" });
+        return;
+      }
+      if (res.status === 400) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string; field?: string };
+        const fieldErrors = data.field ? apiFieldError(data.field, data.error ?? "") : {};
+        if (Object.keys(fieldErrors).length > 0) {
+          backToForm(fieldErrors);
+          return;
+        }
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSubmitState("success");
+      setSubmitted(true);
+    } catch (err) {
+      console.error("[La Tarongeta] sign-up failed:", err);
+      setSubmitState("error");
+    }
   };
 
   const logo = (
@@ -273,7 +354,7 @@ export default function HomePage() {
 
   const dayOptions = group
     ? DAYS.map((d) => {
-        const left = remainingSpots(group.id, d);
+        const left = remainingSpots(group.id, d, counts);
         return {
           value: d,
           label: left <= 0 ? `${t.days[d]} · ${t.full}` : t.days[d],
@@ -281,7 +362,7 @@ export default function HomePage() {
         };
       })
     : [];
-  const groupFull = !!group && allDaysFull(group.id);
+  const groupFull = !!group && allDaysFull(group.id, counts);
 
   // ── Main form ───────────────────────────────────────────────────────────
   return (
@@ -310,6 +391,7 @@ export default function HomePage() {
             onChange={(v) => handleChange("childName", v)}
             error={err("childName")}
             autoComplete="off"
+            maxLength={120}
           />
         </Box>
 
@@ -368,6 +450,7 @@ export default function HomePage() {
                 onChange={(v) => handleChange("contact1Name", v)}
                 error={err("contact1Name")}
                 autoComplete="name"
+                maxLength={120}
               />
               <Field
                 label={t.contactWhatsapp}
@@ -379,6 +462,7 @@ export default function HomePage() {
                 onChange={(v) => handleChange("contact1Whatsapp", v)}
                 error={err("contact1Whatsapp")}
                 autoComplete="tel"
+                maxLength={40}
               />
             </div>
             <div className="space-y-4">
@@ -392,6 +476,7 @@ export default function HomePage() {
                 onChange={(v) => handleChange("contact2Name", v)}
                 error={err("contact2Name")}
                 autoComplete="name"
+                maxLength={120}
               />
               <Field
                 label={t.contactWhatsapp}
@@ -402,6 +487,7 @@ export default function HomePage() {
                 onChange={(v) => handleChange("contact2Whatsapp", v)}
                 error={err("contact2Whatsapp")}
                 autoComplete="tel"
+                maxLength={40}
               />
             </div>
           </div>
@@ -425,6 +511,7 @@ export default function HomePage() {
           <textarea
             id="notes"
             rows={3}
+            maxLength={2000}
             placeholder={t.notesPlaceholder}
             value={form.notes}
             onChange={(e) => handleChange("notes", e.target.value)}
@@ -468,6 +555,20 @@ export default function HomePage() {
           />
         </section>
 
+        {/* Honeypot for bots: off-screen, skipped by keyboard and assistive tech */}
+        <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-px w-px overflow-hidden">
+          <label htmlFor="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </div>
+
         {/* ── CTA ──────────────────────────────────────────────────── */}
         {!showSummary ? (
           <button
@@ -484,7 +585,10 @@ export default function HomePage() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowSummary(false)}
+                onClick={() => {
+                  setShowSummary(false);
+                  setSubmitState((s) => (s === "error" ? "idle" : s));
+                }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-2xl text-sm transition-colors"
               >
                 {t.edit}
@@ -585,13 +689,14 @@ interface FieldProps {
   error?: string;
   hint?: string;
   autoComplete?: string;
+  maxLength?: number;
 }
 
 // 16px controls: anything smaller makes iOS Safari zoom in on focus.
 const inputBase =
   "w-full rounded-xl border px-4 py-3 text-base text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors";
 
-function Field({ id, label, required, type = "text", placeholder, value, onChange, error, hint, autoComplete }: FieldProps) {
+function Field({ id, label, required, type = "text", placeholder, value, onChange, error, hint, autoComplete, maxLength }: FieldProps) {
   return (
     <div data-field-error={error ? true : undefined}>
       <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-1">
@@ -606,6 +711,7 @@ function Field({ id, label, required, type = "text", placeholder, value, onChang
         value={value}
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
+        maxLength={maxLength}
         aria-required={required || undefined}
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}

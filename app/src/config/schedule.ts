@@ -1,11 +1,12 @@
 /**
  * SCHEDULE CONFIGURATION
  * Two age groups, each with one time slot, Monday to Friday. Every
- * (group, day) session takes at most CAPACITY children.
+ * (group, day) session takes at most CAPACITY children. The number of spots
+ * already taken comes from the sign-up API (GET ?view=availability); a full
+ * session is shown as "Complet" and cannot be chosen, and the API refuses
+ * sign-ups for it too.
  *
- * SIGNUPS is edited by hand until the form has a backend: put the number of
- * confirmed sign-ups per session there and a full session is shown as
- * "Complet" and cannot be chosen.
+ * Keep GROUPS / DAYS / CAPACITY in sync with yaqtin-website/api/la-tarongeta.js.
  */
 
 import { AgeGroup, Day } from "@/types";
@@ -19,13 +20,16 @@ export const AGE_GROUPS: AgeGroup[] = [
 
 export const DAYS: Day[] = ["mon", "tue", "wed", "thu", "fri"];
 
-/** Confirmed sign-ups per session, keyed "<groupId>-<day>" (edit by hand). */
-export const SIGNUPS: Partial<Record<`${AgeGroup["id"]}-${Day}`, number>> = {
-  // "g35-mon": 10,   // example: Monday 3–5 session full
-};
+export type SessionKey = `${AgeGroup["id"]}-${Day}`;
+/** Sign-ups already taken per session, as reported by the API. */
+export type Counts = Partial<Record<SessionKey, number>>;
 
-export function remainingSpots(groupId: AgeGroup["id"], day: Day): number {
-  return CAPACITY - (SIGNUPS[`${groupId}-${day}`] ?? 0);
+export function sessionKey(groupId: AgeGroup["id"], day: Day): SessionKey {
+  return `${groupId}-${day}`;
+}
+
+export function remainingSpots(groupId: AgeGroup["id"], day: Day, counts: Counts): number {
+  return CAPACITY - (counts[sessionKey(groupId, day)] ?? 0);
 }
 
 export function groupById(id: string): AgeGroup | null {

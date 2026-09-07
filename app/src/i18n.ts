@@ -85,7 +85,7 @@ const ca = {
   edit: "← Edita",
   confirm: "Confirma la inscripció ✓",
   sending: "Enviant…",
-  submitError: "Hi ha hagut un error. Torna-ho a provar.",
+  submitError: `Hi ha hagut un error i la inscripció no s'ha enviat. Torna-ho a provar o escriu-nos per WhatsApp al ${CONTACT.PHONE_DISPLAY}.`,
 
   summaryTitle: "Resum de la teva inscripció",
   summaryChild: "Criatura",
@@ -204,7 +204,7 @@ const en: typeof ca = {
   edit: "← Edit",
   confirm: "Confirm sign-up ✓",
   sending: "Sending…",
-  submitError: "Something went wrong. Please try again.",
+  submitError: `Something went wrong and your sign-up was not sent. Please try again or message us on WhatsApp at ${CONTACT.PHONE_DISPLAY}.`,
 
   summaryTitle: "Your sign-up summary",
   summaryChild: "Child",
