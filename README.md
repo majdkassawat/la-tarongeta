@@ -54,15 +54,26 @@ Cada sessió (franja d'edat + dia) admet 10 criatures: el formulari demana les
 places ocupades a `GET /api/la-tarongeta?view=availability` i desactiva els
 dies plens, i el servidor rebutja (409) una inscripció en una sessió plena.
 
-Vistes d'administració (cal `LA_TARONGETA_ADMIN_KEY`, enviada com a
-`Authorization: Bearer …` o, per descarregar des del navegador, `?key=…`):
+**Pàgina d'administració:** [yaqtin.net/la-tarongeta/admin](https://yaqtin.net/la-tarongeta/admin)
+(fitxers a `yaqtin-website/la-tarongeta/admin/`, que `npm run export:site`
+conserva). Amb la clau `LA_TARONGETA_ADMIN_KEY` mostra les places per sessió i
+totes les inscripcions, permet cancel·lar-ne una (allibera la plaça),
+restaurar-la o esborrar-la, i descarrega el CSV.
+
+Vistes de l'API que fa servir (cal la mateixa clau, sempre com a capçalera
+`Authorization: Bearer …`, mai a l'URL):
 
 - `GET /api/la-tarongeta?view=export` — totes les inscripcions en CSV.
 - `GET /api/la-tarongeta?view=sync` — copia al full les inscripcions que hi
   falten (útil just després d'activar el compte de servei).
+- `GET /api/la-tarongeta?view=json` — totes les inscripcions i el recompte de
+  places, per a la pàgina d'administració.
+- `PATCH /api/la-tarongeta?id=<grup>-<dia>-<n>&status=cancelled|active` —
+  cancel·la (allibera la plaça) o restaura una inscripció; la cancel·lació és
+  un fitxer marcador `la-tarongeta/cancelled/<id>-<etiqueta>.json`.
 - `DELETE /api/la-tarongeta?id=<grup>-<dia>-<n>` — esborra el fitxer d'una
-  inscripció (una prova, un duplicat); la fila del full, si n'hi ha, s'esborra
-  o es marca a mà.
+  inscripció (una prova, un duplicat) i allibera la plaça; no es pot desfer.
+  La fila del full, si n'hi ha, s'esborra o es marca a mà.
 
 Per provar-ho en local, des d'un checkout de `yaqtin-website` amb l'export ja
 publicat: `node scripts/dev-la-tarongeta.cjs` serveix el formulari i la funció
