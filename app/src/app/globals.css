@@ -1,19 +1,9 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-nunito: var(--font-nunito);
+  --font-lexend: var(--font-lexend);
 }
 
 body {
-  font-family: var(--font-nunito), system-ui, sans-serif;
-}
-
-/* Remove number input arrows */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type="number"] {
-  -moz-appearance: textfield;
+  font-family: var(--font-lexend), system-ui, sans-serif;
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { FormData, ScheduleSlot } from "@/types";
+import { groupById } from "@/config/schedule";
+import { Dict } from "@/i18n";
+import { Day, FormData } from "@/types";
 
 interface SummaryCardProps {
+  t: Dict;
   formData: FormData;
-  selectedSlot: ScheduleSlot | null;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -17,27 +19,23 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function SummaryCard({ formData, selectedSlot }: SummaryCardProps) {
+export default function SummaryCard({ t, formData }: SummaryCardProps) {
+  const group = groupById(formData.ageGroup);
+  const contact = (name: string, phone: string) =>
+    [name, phone].filter(Boolean).join(" · ");
   return (
     <div className="rounded-2xl border-2 border-gray-200 bg-gray-50 p-5">
       <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">
-        Resumen de tu reserva
+        {t.summaryTitle}
       </h3>
       <div className="space-y-0">
-        <Row label="Padre / madre" value={formData.parentName} />
-        <Row label="Nombre del niño/a" value={formData.childName} />
-        <Row label="Edad" value={formData.childAge ? `${formData.childAge} años` : ""} />
-        <Row label="Teléfono" value={formData.phone} />
-        <Row label="WhatsApp" value={formData.whatsapp} />
-        <Row
-          label="Horario"
-          value={
-            selectedSlot
-              ? `${selectedSlot.day} ${selectedSlot.startTime}–${selectedSlot.endTime}`
-              : "No seleccionado"
-          }
-        />
-        {formData.notes && <Row label="Comentarios" value={formData.notes} />}
+        <Row label={t.summaryChild} value={formData.childName} />
+        <Row label={t.summaryAge} value={group ? t.ageGroupLabel(group) : ""} />
+        <Row label={t.summarySchedule} value={group ? t.slotLabel(group) : t.notSelected} />
+        <Row label={t.summaryDay} value={formData.day ? t.days[formData.day as Day] : t.notSelected} />
+        <Row label={t.summaryContact1} value={contact(formData.contact1Name, formData.contact1Whatsapp)} />
+        <Row label={t.summaryContact2} value={contact(formData.contact2Name, formData.contact2Whatsapp)} />
+        {formData.notes && <Row label={t.summaryNotes} value={formData.notes} />}
       </div>
     </div>
   );
